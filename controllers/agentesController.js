@@ -100,12 +100,15 @@ function updateAgenteParcial(req, res) {
     }
 
     if (dataDeIncorporacao !== undefined) {
-        const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-        if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
-            return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-        }
-        camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
+    if (!dataDeIncorporacao || dataDeIncorporacao.trim() === "") {
+        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
     }
+    const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
+    if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
+        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
+    }
+    camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
+}
 
     if (cargo !== undefined) {
         if (!cargo) {
