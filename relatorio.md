@@ -1,245 +1,266 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 8 créditos restantes para usar o sistema de feedback AI.
+Você tem 7 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para JoaoFrois01:
 
-Nota final: **77.4/100**
+Nota final: **91.3/100**
 
-# Feedback para JoaoFrois01 🚔✨
+# Feedback para JoaoFrois01 🚓✨
 
-Olá, JoaoFrois01! Primeiro, parabéns pelo esforço e pela entrega da sua API para o Departamento de Polícia! 🎉 Construir uma API RESTful completa com Node.js e Express.js não é tarefa fácil, e você já alcançou vários pontos importantes. Vamos juntos entender o que está bem e onde podemos aprimorar para deixar seu projeto ainda mais robusto e alinhado às melhores práticas? Vamos nessa! 🚀
+Olá, Joao! Antes de mais nada, parabéns pelo trabalho que você entregou! 🎉 Seu projeto está muito bem estruturado, com uma organização clara entre rotas, controllers e repositories — isso é essencial para manter o código escalável e fácil de manter. A arquitetura modular que você adotou está alinhada com as boas práticas, e isso já te coloca muito à frente! 👏
 
----
-
-## 🎯 Pontos Fortes que Merecem Destaque!
-
-- **Organização do projeto:** Sua estrutura de pastas está muito bem organizada, seguindo o padrão esperado com `routes`, `controllers`, `repositories`, `docs` e `utils`. Isso é essencial para manter o código escalável e fácil de manter. 👏
-
-- **Implementação dos endpoints:** Você implementou todos os métodos HTTP (GET, POST, PUT, PATCH, DELETE) para os recursos `/agentes` e `/casos`. Isso mostra que você compreende bem o funcionamento básico de uma API RESTful.
-
-- **Validações básicas:** O tratamento de erros com status 400 e 404 está presente em vários pontos, o que é ótimo para garantir que a API responde adequadamente a dados inválidos e recursos inexistentes.
-
-- **Filtros e buscas:** Você implementou filtros para casos por status e agente_id, além de um endpoint de busca por palavra-chave em casos e um endpoint para buscar o agente responsável por um caso. Isso mostra que você foi além do básico, buscando entregar funcionalidades extras!
-
-- **Swagger para documentação:** A inclusão do Swagger para documentar suas rotas é um excelente diferencial e ajuda muito quem vai consumir sua API.
+Além disso, percebi que você implementou corretamente os métodos HTTP para os recursos `/agentes` e `/casos`, com validações e tratamento de erros que cobrem muitas situações. Seu uso do `moment` para validar datas e o cuidado com o ID nas atualizações mostram atenção aos detalhes importantes. Também vi que você integrou o Swagger para documentação, o que é um diferencial e ajuda muito na comunicação da API. Muito bom! 🚀
 
 ---
 
-## 🔍 Análise Profunda dos Pontos que Precisam de Atenção
+## Vamos agora analisar alguns pontos importantes para você avançar ainda mais! 🔍
 
-### 1. Validação do campo `dataDeIncorporacao` para agentes
+### 1. Atenção ao uso de variáveis imutáveis vs mutáveis em filtros (GET `/agentes` e `/casos`)
 
-Você permitiu que um agente seja registrado com uma data de incorporação no futuro, o que não faz sentido para o contexto do seu sistema. Na função `createAgente` do `agentesController.js`, você valida a data com o `moment` para o formato, mas não verifica se a data é anterior ou igual à data atual.
-
-```js
-const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-if (!dataDeIncorporacao || dataFormatada.format("YYYY-MM-DD") !== req.body.dataDeIncorporacao)
-    return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-```
-
-**Sugestão:** Acrescente uma verificação para impedir datas futuras:
+No seu controller de agentes, por exemplo, você declarou:
 
 ```js
-if (!dataDeIncorporacao || !dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
-    return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-}
-```
-
-Isso garante que a data de incorporação seja válida e não futura. Validar dados com atenção evita inconsistências no banco de dados e problemas futuros.
-
-📚 Recomendo este vídeo para aprofundar em validação de dados em APIs Node.js:  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
-
----
-
-### 2. Permissão indevida para alterar o ID de agentes e casos
-
-No seu código, não há proteção para impedir que o campo `id` seja alterado tanto na atualização completa (PUT) quanto na parcial (PATCH) para agentes e casos. Isso pode causar problemas sérios, pois o `id` deve ser imutável e único.
-
-Por exemplo, no `updateAgente`:
-
-```js
-const nome = req.body.nome
-const dataDeIncorporacao = req.body.dataDeIncorporacao
-const cargo = req.body.cargo
-
-// Você não checa se req.body.id existe e impede alteração
-res.status(200).json(agentesRepository.AtualizarAgente(id, nome, dataDeIncorporacao, cargo))
-```
-
-E no repositório, a função `AtualizarAgente` simplesmente altera os campos recebidos, mas não há lógica para ignorar o campo `id`.
-
-**Como melhorar:**  
-- No controller, ignore qualquer tentativa de alterar o `id` no payload.  
-- No repositório, não altere o `id` do objeto existente.
-
-Exemplo no controller:
-
-```js
-if (req.body.id && req.body.id !== id) {
-    return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
-}
-```
-
-Isso também vale para casos (`casosController.js`) e seus repositórios.
-
-📚 Para entender melhor os códigos de status HTTP e boas práticas em APIs REST, veja:  
-https://youtu.be/RSZHvQomeKE
-
----
-
-### 3. Validação da existência do agente ao criar ou atualizar um caso
-
-No seu `createCaso` e `updateCaso`, você aceita o campo `agente_id` sem verificar se esse agente realmente existe no sistema. Isso permite criar casos vinculados a agentes inexistentes, o que quebra a integridade dos dados.
-
-No `createCaso`:
-
-```js
-const agente_id = req.body.agente_id
-// Falta verificação se agente_id existe no agentesRepository
-```
-
-**Como corrigir:**  
-Antes de criar ou atualizar um caso, verifique se o agente existe:
-
-```js
-const agente = agentesRepository.findById(agente_id);
-if (!agente) {
-    return res.status(404).json(helpError.ErrorMessage(404, "agente_id"));
-}
-```
-
-Isso garante que você não cria casos com agentes inválidos.
-
-📚 Para entender melhor tratamento de erros 404 e validação, confira:  
-https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
-
----
-
-### 4. Tratamento incorreto do status 404 ao deletar agente inexistente
-
-Na função `deleteAgente` do seu controller, quando o agente não é encontrado, você chama:
-
-```js
-if (!agente)
-    res.status(404);
-```
-
-Mas você não retorna nem envia uma resposta, o que faz a requisição "ficar pendente" e pode causar problemas no cliente.
-
-**Correção simples:**
-
-```js
-if (!agente)
-    return res.status(404).json({ message: "Agente não encontrado" });
-```
-
-Sempre que enviar um status de erro, envie também uma resposta para que o cliente saiba o que aconteceu.
-
----
-
-### 5. Fluxo de filtros nos endpoints de listagem (GET)
-
-Nos controllers de agentes e casos, a lógica de filtros está um pouco confusa, porque você faz vários `res.status(200).json(...)` sem `return`, o que pode causar múltiplas respostas.
-
-Exemplo em `getAllAgentes`:
-
-```js
-if (req.query.cargo)
-    res.status(200).json(agentes.filter(a => a.cargo === req.query.cargo));
-if (req.query.sort) {
+function getAllAgentes(req, res) {
+    const agentes = agentesRepository.findAll()
+    const result = agentes;
+    if (req.query.cargo)
+         result = result.filter(a => a.cargo === req.query.cargo);
     // ...
-    res.status(200).json(...)
 }
-res.status(200).json(agentes)
 ```
 
-Aqui, se `req.query.cargo` existir, a resposta é enviada, mas o código continua e tenta enviar outras respostas, gerando erro.
+Aqui, você declarou `result` com `const` e depois tenta reatribuir `result = result.filter(...)`. Isso gera erro porque `const` não permite reatribuição.
 
-**Melhor abordagem:**
+O mesmo acontece no controller de casos:
 
 ```js
-let resultado = agentes;
-
-if (req.query.cargo) {
-    resultado = resultado.filter(a => a.cargo === req.query.cargo);
+function getAllCasos(req, res) {
+    const casos = casosRepository.findAll()
+    const result = casos;
+    if (req.query.agente_id)
+        result = result.filter(c => c.agente_id === req.query.agente_id);
+    // ...
 }
+```
 
-if (req.query.sort) {
-    if (req.query.sort[0] === "-") {
-        resultado = resultado.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao)).reverse();
-    } else {
-        resultado = resultado.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao));
+**Por que isso importa?**  
+Essa pequena confusão entre `const` e `let` impede que o filtro funcione corretamente, o que pode causar falhas em endpoints que dependem de filtros, e explica o erro que você viu ao tentar atualizar parcialmente com PATCH e payload incorreto (pois o filtro pode não estar funcionando direito).
+
+**Como corrigir?**  
+Declare `result` com `let` para permitir reatribuição:
+
+```js
+let result = agentes;
+if (req.query.cargo)
+    result = result.filter(a => a.cargo === req.query.cargo);
+```
+
+Isso vai garantir que os filtros sejam aplicados corretamente.
+
+---
+
+### 2. Tratamento de erros incompleto no fluxo de funções
+
+Em vários controllers, como `updateAgente`, `deleteAgente`, `updateCaso`, você verifica se o recurso existe:
+
+```js
+const agente = agentesRepository.findById(id);
+if (!agente)
+    res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
+```
+
+Porém, depois de enviar a resposta de erro, o código continua executando. Isso pode causar comportamentos inesperados, porque a função não para ali.
+
+**Por que isso é um problema?**  
+Quando você não usa `return` após enviar a resposta, o Express pode tentar enviar outra resposta ou executar código que não deveria rodar, gerando erros ou comportamentos errados.
+
+**Como corrigir?**  
+Sempre use `return` para interromper a execução após enviar a resposta:
+
+```js
+if (!agente)
+    return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
+```
+
+Isso é um detalhe simples, mas fundamental para evitar bugs difíceis de rastrear.
+
+---
+
+### 3. Validação de payload no método PATCH para agentes e casos
+
+O teste que falhou indica que, ao tentar atualizar parcialmente um agente com um payload mal formatado, o servidor deveria retornar **status 400** (Bad Request), mas isso não está acontecendo.
+
+Analisando seu código de `updateAgenteParcial`:
+
+```js
+function updateAgenteParcial(req, res) {
+    const id = req.params.id
+    if (req.body.id && req.body.id !== id) {
+        return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
     }
-}
+    const agente = agentesRepository.findById(id);
+    if (!agente)
+        res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
+    const nome = !(req.body.nome) ? agente.nome : req.body.nome;
+    const dataDeIncorporacao = !(req.body.dataDeIncorporacao) ? agente.dataDeIncorporacao : req.body.dataDeIncorporacao;
+    const cargo = !(req.body.cargo) ? agente.cargo : req.body.cargo;
 
-return res.status(200).json(resultado);
+    res.status(200).json(agentesRepository.AtualizarAgenteParcial(id, nome, dataDeIncorporacao, cargo))
+}
 ```
 
-Assim você processa todos os filtros e ordenações antes de enviar a resposta, evitando múltiplos envios.
+Você não está validando se os campos enviados têm formatos corretos (exemplo: se `dataDeIncorporacao` é uma data válida, se o `cargo` está presente e correto, etc). Isso faz com que payloads mal formatados passem sem erro.
 
-📚 Para entender melhor manipulação de arrays e fluxo de requisições, recomendo:  
-https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI  
-https://youtu.be/Bn8gcSQH-bc?si=Df4htGoVrV0NR7ri
+**Solução recomendada:**  
+Implemente validações similares às que você fez no método `createAgente`, mas adaptadas para o PATCH, onde cada campo é opcional, mas se presente, deve ser válido.
 
----
-
-### 6. Mensagens de erro personalizadas para agentes e casos inválidos
-
-Notei que você tem um utilitário `errorHandler.js` para mensagens de erro, mas ele não está sendo usado consistentemente em todos os casos de erros 404 e 400. Por exemplo, na busca por agente ou caso inexistente, você envia:
+Exemplo:
 
 ```js
-res.status(404).json({ message: "Agente não encontrado" })
+const moment = require('moment');
+
+function updateAgenteParcial(req, res) {
+    const id = req.params.id;
+    if (req.body.id && req.body.id !== id) {
+        return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
+    }
+    const agente = agentesRepository.findById(id);
+    if (!agente)
+        return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
+
+    const nome = req.body.nome !== undefined ? req.body.nome : agente.nome;
+    const dataDeIncorporacao = req.body.dataDeIncorporacao !== undefined ? req.body.dataDeIncorporacao : agente.dataDeIncorporacao;
+    const cargo = req.body.cargo !== undefined ? req.body.cargo : agente.cargo;
+
+    // Validações parciais:
+    if (nome !== undefined && !nome) {
+        return res.status(400).json(helpError.ErrorMessage(400, "nome"));
+    }
+    if (dataDeIncorporacao !== undefined) {
+        const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
+        if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
+            return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
+        }
+    }
+    if (cargo !== undefined && !cargo) {
+        return res.status(400).json(helpError.ErrorMessage(400, "cargo"));
+    }
+
+    res.status(200).json(agentesRepository.AtualizarAgenteParcial(id, nome, dataDeIncorporacao, cargo));
+}
 ```
 
-Mas seria interessante usar o helper para padronizar as mensagens e facilitar manutenção.
+Essa validação vai garantir que, mesmo em atualizações parciais, dados inválidos sejam barrados com o status 400.
 
 ---
 
-## 🌟 Conquistas Bônus que Merecem Parabéns!
+### 4. Validação do agente_id ao criar um caso (POST `/casos`)
 
-- Você implementou filtros para casos por status e agente_id, além de endpoint para busca por palavra-chave em casos. Isso é além do básico e mostra que você está pensando em usabilidade da API! 👏
+O outro teste que falhou indica que, ao criar um caso com um `agente_id` inválido ou inexistente, sua API deveria retornar **status 404**, mas está retornando 400.
 
-- A documentação via Swagger está muito bem feita, incluindo parâmetros, exemplos e respostas, o que é fundamental para APIs profissionais.
+Analisando seu método `createCaso`:
+
+```js
+function createCaso(req, res) {
+    // ...
+    const agente = agentesRepository.findById(agente_id);
+
+    if (!titulo)
+        return res.status(400).json(helpError.ErrorMessage(400, "titulo"));
+    if (!descricao)
+        return res.status(400).json(helpError.ErrorMessage(400, "descricao"));
+    if (!status || (status !== "aberto" && status !== "solucionado"))
+        return res.status(400).json(helpError.ErrorMessage(400, "status"));
+    if (!agente_id || !agente)
+        return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
+
+    return res.status(201).json(casosRepository.AdicionarCaso(titulo, descricao, status, agente_id))
+}
+```
+
+Você está retornando status 400 quando o `agente_id` não existe. Porém, o correto, segundo boas práticas HTTP, é retornar **404 Not Found** quando o recurso referenciado não for encontrado.
+
+**Como ajustar?**
+
+Mantenha o status 400 para quando o campo `agente_id` estiver ausente ou mal formatado, mas se o `agente_id` for informado e não existir no repositório, retorne 404.
+
+Exemplo:
+
+```js
+if (!agente_id) {
+    return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
+}
+if (!agente) {
+    return res.status(404).json(helpError.ErrorMessageID(404, agente_id, "agente"));
+}
+```
+
+Assim, você diferencia erro de payload (400) de recurso inexistente (404), tornando a API mais clara e semântica.
 
 ---
 
-## 📚 Recursos para Você Aprofundar e Melhorar Ainda Mais
+### 5. Pequenas melhorias e boas práticas
 
-- **Validação de dados e tratamento de erros:**  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
-https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
-https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
+- No seu `controllers/agentesController.js` e `controllers/casosController.js`, você está importando e usando o `express` e `app.use(express.json())` dentro do controller, o que não é necessário. Essa configuração deve estar somente no `server.js`. Isso não causa erro, mas é redundante e pode confundir quem lê o código.
 
-- **Organização do projeto com Express e MVC:**  
-https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH  
-https://expressjs.com/pt-br/guide/routing.html
+- No método `getAgenteByCasoId` do controller de casos, você usa `id` na mensagem de erro, mas a variável do parâmetro é `caso_id`. Isso pode causar erro de referência:
 
-- **Manipulação de arrays e filtros:**  
-https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+```js
+function getAgenteByCasoId(req, res, next) {
+    const caso_id = req.params.id
+    if (!casosRepository.findById(caso_id))
+        return res.status(404).json(helpError.ErrorMessageID(404, id, "caso")); // 'id' não definido aqui
+    // ...
+}
+```
 
-- **HTTP e status codes:**  
-https://youtu.be/RSZHvQomeKE
+Troque `id` por `caso_id` para consertar:
 
----
-
-## 📝 Resumo dos Principais Pontos para Focar:
-
-- ✅ Validar que a `dataDeIncorporacao` do agente não seja uma data futura.  
-- ✅ Impedir que o campo `id` seja alterado em atualizações (PUT e PATCH) para agentes e casos.  
-- ✅ Verificar a existência do agente antes de criar ou atualizar um caso com `agente_id`.  
-- ✅ Corrigir o tratamento de status 404 para deletar agente inexistente (enviar resposta e retornar).  
-- ✅ Ajustar fluxo de filtros nos endpoints para evitar múltiplas respostas e garantir que filtros funcionem combinados.  
-- ✅ Usar mensagens de erro personalizadas de forma consistente para erros 400 e 404.  
+```js
+return res.status(404).json(helpError.ErrorMessageID(404, caso_id, "caso"));
+```
 
 ---
 
-JoaoFrois01, você está no caminho certo e com uma base muito boa! Com esses ajustes, sua API vai ficar ainda mais sólida, segura e profissional. Continue explorando, testando e aprimorando seu código, porque você tem tudo para se tornar um expert em Node.js e Express! 🚀👮‍♂️
+### 6. Sobre os testes bônus que você passou
 
-Se precisar de ajuda para implementar qualquer uma dessas melhorias, só chamar! Estou aqui para ajudar no que for preciso.
+Você implementou com sucesso filtros por status, agente responsável, busca por keywords, ordenação por data de incorporação e mensagens de erro customizadas! Isso é fantástico e mostra que você está indo além do básico. Parabéns por esse esforço extra! 🎯👏
 
-Boa codificação e até a próxima! 💪✨
+---
+
+## Recursos para você aprofundar e corrigir esses pontos:
+
+- Para entender melhor o uso correto de `let` e `const` e manipulação de arrays:  
+  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+
+- Para validação de dados e tratamento de erros na API (status 400 e 404):  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+
+- Para entender o fluxo correto de requisição e resposta e evitar continuar a execução após enviar resposta:  
+  https://youtu.be/Bn8gcSQH-bc?si=Df4htGoVrV0NR7ri
+
+- Para organização do projeto e arquitetura MVC com Express.js:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+
+---
+
+## Resumo rápido dos pontos para focar:
+
+- ⚠️ Use `let` ao invés de `const` quando precisar reatribuir variáveis, principalmente para filtros em arrays.  
+- ⚠️ Sempre use `return` após enviar uma resposta com `res.status(...).json(...)` para interromper a execução da função.  
+- ⚠️ Implemente validação completa no PATCH para garantir que payloads mal formatados retornem 400.  
+- ⚠️ Diferencie status 400 (dados inválidos) de 404 (recurso não encontrado), especialmente ao validar IDs relacionados, como `agente_id` em casos.  
+- ⚠️ Remova importações e middlewares desnecessários dentro dos controllers.  
+- ⚠️ Corrija variáveis erradas usadas em mensagens de erro para evitar referências inválidas.  
+
+---
+
+Joao, você está no caminho certo e seu código já tem uma base muito sólida! 💪 Com esses ajustes, sua API vai ficar ainda mais robusta, clara e alinhada às melhores práticas. Continue assim, sempre buscando entender a raiz dos problemas e aprimorar seu código. Qualquer dúvida, estou aqui para te ajudar! 🚀✨
+
+Um grande abraço e bons códigos! 👊😄
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
