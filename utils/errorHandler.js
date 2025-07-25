@@ -12,7 +12,20 @@ function ErrorMessage(status, errors) {
     return msg;
 
 }
+function ErrorMessageID(status, id, objeto) {
 
+    const msg = {
+        "status": status,
+        "message": `O ID ${id}  do ${objeto} não foi encontrado`,
+        "errors": [{
+            status: `O ID ${id}  do ${objeto} não foi encontrado na base de dados`
+        }
+        ]
+    }
+
+    return msg;
+}
 module.exports = {
-    ErrorMessage
+    ErrorMessage,
+    ErrorMessageID
 }
