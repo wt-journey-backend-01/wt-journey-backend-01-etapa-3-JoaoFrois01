@@ -1,8 +1,7 @@
 const express = require('express')
 const router = express.Router();
-const casosController = require('../controllers/casosControllers');
-const app = express();
-app.use(express.json());
+const casosController = require('../controllers/casosController');
+
 
 //OBS: AS TAGS DO SWAGGER FAZER REFERÊNCIA A ROTA LOGO ABAIXO
 
