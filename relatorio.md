@@ -1,125 +1,41 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 7 créditos restantes para usar o sistema de feedback AI.
+Você tem 6 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para JoaoFrois01:
 
-Nota final: **91.3/100**
+Nota final: **97.7/100**
 
-# Feedback para JoaoFrois01 🚓✨
+# Feedback para você, JoaoFrois01! 🚓✨
 
-Olá, Joao! Antes de mais nada, parabéns pelo trabalho que você entregou! 🎉 Seu projeto está muito bem estruturado, com uma organização clara entre rotas, controllers e repositories — isso é essencial para manter o código escalável e fácil de manter. A arquitetura modular que você adotou está alinhada com as boas práticas, e isso já te coloca muito à frente! 👏
-
-Além disso, percebi que você implementou corretamente os métodos HTTP para os recursos `/agentes` e `/casos`, com validações e tratamento de erros que cobrem muitas situações. Seu uso do `moment` para validar datas e o cuidado com o ID nas atualizações mostram atenção aos detalhes importantes. Também vi que você integrou o Swagger para documentação, o que é um diferencial e ajuda muito na comunicação da API. Muito bom! 🚀
+Olá, João! Primeiro, parabéns pelo empenho e pela qualidade do seu projeto! 🎉 Seu código está muito bem estruturado, seguindo a arquitetura modular com rotas, controllers e repositories, e isso já é um baita avanço para construir APIs escaláveis e organizadas. Além disso, você implementou quase todos os métodos HTTP para os recursos `/agentes` e `/casos` com validação e tratamento de erros – isso mostra que você está no caminho certo! 👏
 
 ---
 
-## Vamos agora analisar alguns pontos importantes para você avançar ainda mais! 🔍
+## O que você mandou muito bem! 🌟
 
-### 1. Atenção ao uso de variáveis imutáveis vs mutáveis em filtros (GET `/agentes` e `/casos`)
-
-No seu controller de agentes, por exemplo, você declarou:
-
-```js
-function getAllAgentes(req, res) {
-    const agentes = agentesRepository.findAll()
-    const result = agentes;
-    if (req.query.cargo)
-         result = result.filter(a => a.cargo === req.query.cargo);
-    // ...
-}
-```
-
-Aqui, você declarou `result` com `const` e depois tenta reatribuir `result = result.filter(...)`. Isso gera erro porque `const` não permite reatribuição.
-
-O mesmo acontece no controller de casos:
-
-```js
-function getAllCasos(req, res) {
-    const casos = casosRepository.findAll()
-    const result = casos;
-    if (req.query.agente_id)
-        result = result.filter(c => c.agente_id === req.query.agente_id);
-    // ...
-}
-```
-
-**Por que isso importa?**  
-Essa pequena confusão entre `const` e `let` impede que o filtro funcione corretamente, o que pode causar falhas em endpoints que dependem de filtros, e explica o erro que você viu ao tentar atualizar parcialmente com PATCH e payload incorreto (pois o filtro pode não estar funcionando direito).
-
-**Como corrigir?**  
-Declare `result` com `let` para permitir reatribuição:
-
-```js
-let result = agentes;
-if (req.query.cargo)
-    result = result.filter(a => a.cargo === req.query.cargo);
-```
-
-Isso vai garantir que os filtros sejam aplicados corretamente.
+- Organização do projeto impecável, com pastas claras para `routes`, `controllers`, `repositories`, `utils` e `docs`. Isso facilita demais a manutenção e a escalabilidade.
+- Implementação completa dos endpoints CRUD para agentes e casos, com tratamento adequado para status HTTP (200, 201, 204, 400, 404).
+- Uso correto do `express.Router()` para modularizar as rotas.
+- Validações robustas na criação e atualização dos agentes e casos, com uso do `moment` para validar datas.
+- Implementação do Swagger para documentação da API, com comentários claros nas rotas.
+- Aplicação do UUID para IDs únicos, garantindo integridade dos dados.
+- Implementou filtros simples para casos por status e agente, e também para agentes por cargo e ordenação por data de incorporação — isso é um ótimo diferencial! 💪
 
 ---
 
-### 2. Tratamento de erros incompleto no fluxo de funções
+## Pontos para melhorar e destravar 100% 🚀
 
-Em vários controllers, como `updateAgente`, `deleteAgente`, `updateCaso`, você verifica se o recurso existe:
+### 1. Problema no PATCH para atualização parcial de agente com payload incorreto
 
-```js
-const agente = agentesRepository.findById(id);
-if (!agente)
-    res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
-```
+Você mencionou que o teste que falhou foi:  
+> 'UPDATE: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto'
 
-Porém, depois de enviar a resposta de erro, o código continua executando. Isso pode causar comportamentos inesperados, porque a função não para ali.
+Ao analisar seu `agentesController.js`, percebi que na função `updateAgenteParcial` você está fazendo validações parciais, o que é ótimo, mas não está retornando a resposta corretamente em todos os fluxos. Especificamente, você não tem um `return` antes de `res.status(200).json(...)`, o que pode causar problemas no fluxo da função.
 
-**Por que isso é um problema?**  
-Quando você não usa `return` após enviar a resposta, o Express pode tentar enviar outra resposta ou executar código que não deveria rodar, gerando erros ou comportamentos errados.
-
-**Como corrigir?**  
-Sempre use `return` para interromper a execução após enviar a resposta:
+Veja como está seu código:
 
 ```js
-if (!agente)
-    return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
-```
-
-Isso é um detalhe simples, mas fundamental para evitar bugs difíceis de rastrear.
-
----
-
-### 3. Validação de payload no método PATCH para agentes e casos
-
-O teste que falhou indica que, ao tentar atualizar parcialmente um agente com um payload mal formatado, o servidor deveria retornar **status 400** (Bad Request), mas isso não está acontecendo.
-
-Analisando seu código de `updateAgenteParcial`:
-
-```js
-function updateAgenteParcial(req, res) {
-    const id = req.params.id
-    if (req.body.id && req.body.id !== id) {
-        return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
-    }
-    const agente = agentesRepository.findById(id);
-    if (!agente)
-        res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
-    const nome = !(req.body.nome) ? agente.nome : req.body.nome;
-    const dataDeIncorporacao = !(req.body.dataDeIncorporacao) ? agente.dataDeIncorporacao : req.body.dataDeIncorporacao;
-    const cargo = !(req.body.cargo) ? agente.cargo : req.body.cargo;
-
-    res.status(200).json(agentesRepository.AtualizarAgenteParcial(id, nome, dataDeIncorporacao, cargo))
-}
-```
-
-Você não está validando se os campos enviados têm formatos corretos (exemplo: se `dataDeIncorporacao` é uma data válida, se o `cargo` está presente e correto, etc). Isso faz com que payloads mal formatados passem sem erro.
-
-**Solução recomendada:**  
-Implemente validações similares às que você fez no método `createAgente`, mas adaptadas para o PATCH, onde cada campo é opcional, mas se presente, deve ser válido.
-
-Exemplo:
-
-```js
-const moment = require('moment');
-
 function updateAgenteParcial(req, res) {
     const id = req.params.id;
     if (req.body.id && req.body.id !== id) {
@@ -151,116 +67,148 @@ function updateAgenteParcial(req, res) {
 }
 ```
 
-Essa validação vai garantir que, mesmo em atualizações parciais, dados inválidos sejam barrados com o status 400.
+**Sugestão:** Acrescente um `return` antes do `res.status(200)...` para garantir que a função finalize a execução corretamente:
+
+```js
+return res.status(200).json(agentesRepository.AtualizarAgenteParcial(id, nome, dataDeIncorporacao, cargo));
+```
+
+Isso evita que o Express fique "confuso" e tente responder duas vezes, o que pode causar erros inesperados.
 
 ---
 
-### 4. Validação do agente_id ao criar um caso (POST `/casos`)
+### 2. Validação incompleta no PATCH de casos
 
-O outro teste que falhou indica que, ao criar um caso com um `agente_id` inválido ou inexistente, sua API deveria retornar **status 404**, mas está retornando 400.
+Na função `updateCasoParcial` em `casosController.js`, percebi que você não está validando os campos de forma tão rigorosa quanto no PUT. Por exemplo, não há validação para o status quando ele é passado parcialmente, nem para o `agente_id` (se existe e é válido). Isso pode causar dados inconsistentes.
 
-Analisando seu método `createCaso`:
+Seu código atual:
 
 ```js
-function createCaso(req, res) {
-    // ...
+function updateCasoParcial(req, res) {
+    const id = req.params.id
+    if (req.body.id && req.body.id !== id) {
+        return res.status(400).json({ message: "Não é permitido alterar o ID do caso." });
+    }
+    const caso = casosRepository.findById(id);
+    if (!caso)
+        return res.status(404).json(helpError.ErrorMessageID(404, id, "caso"));
+
+    const titulo = !(req.body.titulo) ? caso.titulo : req.body.titulo;
+    const descricao = !(req.body.descricao) ? caso.descricao : req.body.descricao;
+    const status = !(req.body.status) ? caso.status : (req.body.status).toLowerCase();
+    const agente_id = !(req.body.agente_id) ? caso.agente_id : req.body.agente_id;
+
+    return res.status(200).json(casosRepository.AtualizarCasoParcial(id, titulo, descricao, status, agente_id))
+}
+```
+
+**O que pode ser melhorado:**  
+- Validar se `status` parcial é um dos valores permitidos (`"aberto"` ou `"solucionado"`).  
+- Validar se `agente_id` parcial existe no repositório de agentes.  
+- Validar se os campos não são strings vazias.
+
+Assim, seu endpoint fica mais robusto e evita dados inválidos. Algo assim:
+
+```js
+if (req.body.status && !["aberto", "solucionado"].includes(status)) {
+    return res.status(400).json(helpError.ErrorMessage(400, "status"));
+}
+if (req.body.agente_id) {
     const agente = agentesRepository.findById(agente_id);
-
-    if (!titulo)
-        return res.status(400).json(helpError.ErrorMessage(400, "titulo"));
-    if (!descricao)
-        return res.status(400).json(helpError.ErrorMessage(400, "descricao"));
-    if (!status || (status !== "aberto" && status !== "solucionado"))
-        return res.status(400).json(helpError.ErrorMessage(400, "status"));
-    if (!agente_id || !agente)
-        return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
-
-    return res.status(201).json(casosRepository.AdicionarCaso(titulo, descricao, status, agente_id))
+    if (!agente) {
+        return res.status(404).json(helpError.ErrorMessageID(404, agente_id, "agente"));
+    }
 }
-```
-
-Você está retornando status 400 quando o `agente_id` não existe. Porém, o correto, segundo boas práticas HTTP, é retornar **404 Not Found** quando o recurso referenciado não for encontrado.
-
-**Como ajustar?**
-
-Mantenha o status 400 para quando o campo `agente_id` estiver ausente ou mal formatado, mas se o `agente_id` for informado e não existir no repositório, retorne 404.
-
-Exemplo:
-
-```js
-if (!agente_id) {
-    return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
+if (titulo !== undefined && !titulo) {
+    return res.status(400).json(helpError.ErrorMessage(400, "titulo"));
 }
-if (!agente) {
-    return res.status(404).json(helpError.ErrorMessageID(404, agente_id, "agente"));
+if (descricao !== undefined && !descricao) {
+    return res.status(400).json(helpError.ErrorMessage(400, "descricao"));
 }
-```
-
-Assim, você diferencia erro de payload (400) de recurso inexistente (404), tornando a API mais clara e semântica.
-
----
-
-### 5. Pequenas melhorias e boas práticas
-
-- No seu `controllers/agentesController.js` e `controllers/casosController.js`, você está importando e usando o `express` e `app.use(express.json())` dentro do controller, o que não é necessário. Essa configuração deve estar somente no `server.js`. Isso não causa erro, mas é redundante e pode confundir quem lê o código.
-
-- No método `getAgenteByCasoId` do controller de casos, você usa `id` na mensagem de erro, mas a variável do parâmetro é `caso_id`. Isso pode causar erro de referência:
-
-```js
-function getAgenteByCasoId(req, res, next) {
-    const caso_id = req.params.id
-    if (!casosRepository.findById(caso_id))
-        return res.status(404).json(helpError.ErrorMessageID(404, id, "caso")); // 'id' não definido aqui
-    // ...
-}
-```
-
-Troque `id` por `caso_id` para consertar:
-
-```js
-return res.status(404).json(helpError.ErrorMessageID(404, caso_id, "caso"));
 ```
 
 ---
 
-### 6. Sobre os testes bônus que você passou
+### 3. Filtros avançados e mensagens de erro customizadas (bônus)
 
-Você implementou com sucesso filtros por status, agente responsável, busca por keywords, ordenação por data de incorporação e mensagens de erro customizadas! Isso é fantástico e mostra que você está indo além do básico. Parabéns por esse esforço extra! 🎯👏
+Você fez um ótimo trabalho implementando filtros simples para agentes e casos, e isso já é um diferencial! 🎯 No entanto, percebi que os filtros mais complexos e as mensagens de erro customizadas estão incompletos ou não foram implementados.
+
+Por exemplo, no `agentesController.js`, para o filtro por data de incorporação com ordenação crescente e decrescente, você tem um trecho assim:
+
+```js
+if (req.query.sort) {
+    if (req.query.sort[0] === "-")
+        result = agentes.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao)).reverse();
+    else
+        result = agentes.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao));
+}
+```
+
+Aqui, você está sempre ordenando o array original `agentes` e depois invertendo ou não. O problema é que isso altera o array original, o que pode causar resultados inesperados se a função for chamada múltiplas vezes. O ideal é criar uma cópia antes de ordenar:
+
+```js
+if (req.query.sort) {
+    const sorted = [...result].sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao));
+    result = req.query.sort[0] === "-" ? sorted.reverse() : sorted;
+}
+```
+
+Além disso, para as mensagens de erro customizadas, recomendo que você utilize a função `helpError.ErrorMessage` de forma consistente e detalhada, garantindo que o cliente da API entenda exatamente qual campo está com problema e por quê. Isso melhora muito a experiência de quem consome sua API.
 
 ---
 
-## Recursos para você aprofundar e corrigir esses pontos:
+### 4. Pequenas melhorias no repositório
 
-- Para entender melhor o uso correto de `let` e `const` e manipulação de arrays:  
-  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+No seu `agentesRepository.js` e `casosRepository.js`, as funções de atualização parcial (`AtualizarAgenteParcial` e `AtualizarCasoParcial`) simplesmente sobrescrevem todos os campos, mesmo que não tenham sido alterados. Isso funciona porque você já faz essa lógica no controller, mas fica mais claro e seguro se essas funções receberem um objeto parcial e atualizarem somente o que foi passado.
 
-- Para validação de dados e tratamento de erros na API (status 400 e 404):  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+Exemplo para `AtualizarAgenteParcial`:
 
-- Para entender o fluxo correto de requisição e resposta e evitar continuar a execução após enviar resposta:  
-  https://youtu.be/Bn8gcSQH-bc?si=Df4htGoVrV0NR7ri
+```js
+function AtualizarAgenteParcial(id, camposAtualizados) {
+    const agente = findById(id);
+    Object.assign(agente, camposAtualizados);
+    return agente;
+}
+```
 
-- Para organização do projeto e arquitetura MVC com Express.js:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+E no controller:
+
+```js
+const camposAtualizados = {};
+if (req.body.nome !== undefined) camposAtualizados.nome = req.body.nome;
+// ... e assim por diante
+return res.status(200).json(agentesRepository.AtualizarAgenteParcial(id, camposAtualizados));
+```
+
+Isso deixa o código mais flexível e fácil de manter.
+
+---
+
+## Recursos que recomendo para você aprofundar:
+
+- [Documentação oficial do Express.js sobre roteamento](https://expressjs.com/pt-br/guide/routing.html) — para entender melhor como modularizar suas rotas com `express.Router()`.
+- [Validação de dados em APIs Node.js/Express](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_) — para fortalecer seu tratamento e validação de payloads.
+- [Manipulação de arrays em JavaScript](https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI) — para aprimorar seus filtros e ordenações sem alterar os arrays originais.
+- [Fundamentos de API REST e Express.js](https://youtu.be/RSZHvQomeKE) — para consolidar conceitos básicos e avançados de APIs REST.
 
 ---
 
 ## Resumo rápido dos pontos para focar:
 
-- ⚠️ Use `let` ao invés de `const` quando precisar reatribuir variáveis, principalmente para filtros em arrays.  
-- ⚠️ Sempre use `return` após enviar uma resposta com `res.status(...).json(...)` para interromper a execução da função.  
-- ⚠️ Implemente validação completa no PATCH para garantir que payloads mal formatados retornem 400.  
-- ⚠️ Diferencie status 400 (dados inválidos) de 404 (recurso não encontrado), especialmente ao validar IDs relacionados, como `agente_id` em casos.  
-- ⚠️ Remova importações e middlewares desnecessários dentro dos controllers.  
-- ⚠️ Corrija variáveis erradas usadas em mensagens de erro para evitar referências inválidas.  
+- ✅ Adicione `return` antes do `res.status(200).json(...)` na função `updateAgenteParcial` para evitar respostas duplas.
+- ✅ Implemente validações parciais mais completas no PATCH de casos (`updateCasoParcial`), incluindo validação de status e existência do agente.
+- ✅ Evite ordenar diretamente o array original; crie cópias antes de aplicar `.sort()` para não alterar os dados originais.
+- ✅ Melhore a implementação das funções de atualização parcial no repositório para receber objetos parciais e aplicar atualizações de forma dinâmica.
+- ✅ Refine as mensagens de erro customizadas para torná-las mais claras e informativas para o consumidor da API.
+- ✅ Continue explorando filtros mais complexos e ordenações para os endpoints, isso agrega muito valor!
 
 ---
 
-Joao, você está no caminho certo e seu código já tem uma base muito sólida! 💪 Com esses ajustes, sua API vai ficar ainda mais robusta, clara e alinhada às melhores práticas. Continue assim, sempre buscando entender a raiz dos problemas e aprimorar seu código. Qualquer dúvida, estou aqui para te ajudar! 🚀✨
+João, você está muito perto da perfeição! Seu código já está muito sólido e organizado, e com esses pequenos ajustes, sua API vai ficar ainda mais robusta e profissional. Continue assim, explorando cada detalhe e buscando sempre entender o porquê das coisas — isso faz toda a diferença na sua evolução como desenvolvedor! 🚀💙
 
-Um grande abraço e bons códigos! 👊😄
+Se precisar, volte aos vídeos que te recomendei para reforçar os conceitos e não hesite em me chamar para conversar mais sobre qualquer dúvida! Vamos juntos nessa jornada! 💪👨‍💻
+
+Um abraço e até a próxima revisão! 🤗👊
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
