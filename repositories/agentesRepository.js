@@ -36,11 +36,9 @@ function AdicionarAgente(nome, dataDeIncorporacao, cargo) {
 }
 
 //Function 4 (PUT /agentes/:id)
-function AtualizarAgente(id, nome, dataDeIncorporacao, cargo) {
+function AtualizarAgente(id, camposAtualizados) {
     const agente = findById(id);
-    agente.nome = nome;
-    agente.dataDeIncorporacao = dataDeIncorporacao;
-    agente.cargo = cargo;
+    Object.assign(agente, camposAtualizados);
 
     return agente;
 }

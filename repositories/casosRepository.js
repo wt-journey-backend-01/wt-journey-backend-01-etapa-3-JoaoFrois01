@@ -44,12 +44,9 @@ function AtualizarCaso(id, titulo, descricao, status, agente_id) {
 }
 
 //Function 5 (PATCH /casos/:id) -- Função para atualizar parcialmente um caso(a função está igual a de cima, mudei para tornar mais legível)
-function AtualizarCasoParcial(id, titulo, descricao, status, agente_id) {
+function AtualizarCasoParcial(id, camposAtualizados) {
     const caso = findById(id);
-    caso.titulo = titulo;
-    caso.descricao = descricao;
-    caso.status = status;
-    caso.agente_id = agente_id;
+    Object.assign(caso, camposAtualizados);
     return caso;
 }
 
