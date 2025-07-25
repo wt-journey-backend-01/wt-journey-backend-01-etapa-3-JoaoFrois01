@@ -30,10 +30,13 @@ function getCasoById(req, res, next) {
 
 function getAgenteByCasoId(req, res, next) {
         const caso_id = req.params.id
-        if (!casosRepository.findById(caso_id))
+        const caso = casosRepository.findById(caso_id);
+        if (!caso)
                 return res.status(404).json(helpError.ErrorMessageID(404, caso_id, "caso"));
-        const agente_id = casosRepository.findById(caso_id).agente_id;
+        const agente_id = caso.agente_id;
         const agente = agentesRepository.findById(agente_id);
+        if (!agente)
+                return res.status(404).json(helpError.ErrorMessageID(404, agente_id, "agente"));
         return res.status(200).json(agente);
 }
 
@@ -57,7 +60,7 @@ function createCaso(req, res) {
         if (!descricao)
                 return res.status(400).json(helpError.ErrorMessage(400, "descricao"));
         if (!status || (status !== "aberto" && status !== "solucionado"))
-                return res.status(400).json(helpError.ErrorMessage(400, "status"));
+                return res.status(400).json(helpError.ErrorMessage(400, "status", status));
         if (!agente_id)
                 return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
         if (!agente)
@@ -86,7 +89,7 @@ function updateCaso(req, res) {
         if (!descricao)
                 return res.status(400).json(helpError.ErrorMessage(400, "descricao"));
         if (!status || (status !== "aberto" && status !== "solucionado"))
-                return res.status(400).json(helpError.ErrorMessage(400, "status"));
+                return res.status(400).json(helpError.ErrorMessage(400, "status",status));
         if (!agente_id || !agente)
                 return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
 
@@ -130,7 +133,7 @@ function updateCasoParcial(req, res) {
     if (status !== undefined) {
         const statusLower = status.toLowerCase();
         if (!["aberto", "solucionado"].includes(statusLower)) {
-            return res.status(400).json(helpError.ErrorMessage(400, "status"));
+            return res.status(400).json(helpError.ErrorMessage(400, "status",status));
         }
         camposAtualizados.status = statusLower;
     }

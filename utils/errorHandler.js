@@ -1,4 +1,4 @@
-function ErrorMessage(status, errors) {
+function ErrorMessage(status, errors,[errorStatus]) {
     const msg = {
         "status": status,
         "message": "Parâmetros inválidos",
@@ -7,7 +7,7 @@ function ErrorMessage(status, errors) {
         }
         ]
     }
-    const error = errors === "status" ? "O campo 'status' pode ser somente 'aberto' ou 'solucionado' " : `"O campo ${errors} precisa ser preenchido corretamente"`;
+    const error = errors === "status" ? `O campo 'status' pode ser somente 'aberto' ou 'solucionado, o valor ${errorStatus} não é válido' ` : `"O campo ${errors} precisa ser preenchido corretamente."`;
     msg.errors[0].status = error;
     return msg;
 

@@ -53,6 +53,8 @@ function updateAgente(req, res) {
         if (!agente)
                 return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
 
+        const camposAtualizados = {};
+
         const nome = req.body.nome
         const dataDeIncorporacao = req.body.dataDeIncorporacao
         const cargo = req.body.cargo
@@ -64,7 +66,11 @@ function updateAgente(req, res) {
         if (!cargo)
                 return res.status(400).json(helpError.ErrorMessage(400, "cargo"));
 
-        return res.status(200).json(agentesRepository.AtualizarAgente(id, nome, dataDeIncorporacao, cargo))
+        camposAtualizados.nome = nome;
+        camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
+        camposAtualizados.cargo = cargo;
+
+        return res.status(200).json(agentesRepository.AtualizarAgente(id, camposAtualizados));
 }
 
 function updateAgenteParcial(req, res) {

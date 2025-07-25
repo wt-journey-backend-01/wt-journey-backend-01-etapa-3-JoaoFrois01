@@ -44,14 +44,10 @@ function AtualizarAgente(id, camposAtualizados) {
 }
 
 //Function 5 (PATCH /agentes/:id)
-function AtualizarAgenteParcial(id, nome, dataDeIncorporacao, cargo) {
+function AtualizarAgenteParcial(id, camposAtualizados) {
     const agente = findById(id);
-    agente.nome = nome;
-    agente.dataDeIncorporacao = dataDeIncorporacao;
-    agente.cargo = cargo;
-
+    Object.assign(agente, camposAtualizados);
     return agente;
-
 }
 
 //Function 6 (DELETE /agentes/:id)
