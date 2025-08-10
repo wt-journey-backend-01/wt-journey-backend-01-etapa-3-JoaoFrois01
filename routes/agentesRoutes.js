@@ -11,7 +11,7 @@ const agentesController = require('../controllers/agentesController');
  * @swagger
  * /agentes:
  *   get:
- *     summary: Lista todos os agentes registrados, os filtros de cargo e sort podem ser usados para obter os agentes desejados, Sort ordena os agentes por data de incorporação e cargo filtra os agentes pelo cargo.
+ *     summary: Lista todos os agentes registrados, os filtros de cargo e sort podem ser usados para obter os agentes desejados, Sort ordena os agentes por data de incorporação,podendo fazer um filtro entre datas, informando as duas datas desejadas e cargo filtra os agentes pelo cargo.
  *     tags: [Agentes   ]
  *     parameters:
  *       - in: query
@@ -23,7 +23,7 @@ const agentesController = require('../controllers/agentesController');
  *         description: Lista de agentes do departamento de polícia.
  */
 // define a rota para /agentes usando o método GET
-router.get('/agentes', agentesController.getAllAgentes);
+router.get('/', agentesController.getAllAgentes);
 
 /**
  * @swagger
@@ -42,7 +42,7 @@ router.get('/agentes', agentesController.getAllAgentes);
  *         description: Retorna o "agente" correspondente ao ID fornecido.
  */
 //define a rota para /agentes/:id usando o método GET
-router.get('/agentes/:id', agentesController.getAgenteById);
+router.get('/:id', agentesController.getAgenteById);
 
 
 /**
@@ -72,7 +72,7 @@ router.get('/agentes/:id', agentesController.getAgenteById);
  *         description: Retorna o objeto "agente" criado.
  */
 // define a rota para /agentes usando o método POST
-router.post('/agentes', agentesController.createAgente);
+router.post('/', agentesController.createAgente);
 
 /**
  * @swagger
@@ -107,7 +107,7 @@ router.post('/agentes', agentesController.createAgente);
  *         description: Retorna  o objeto "agente" com todos os atributos atualizados.
  */
 // define a rota para /agentes usando o método PUT
-router.put('/agentes/:id', agentesController.updateAgente);
+router.put('/:id', agentesController.updateAgente);
 
 /**
  * @swagger
@@ -143,7 +143,7 @@ router.put('/agentes/:id', agentesController.updateAgente);
  *         description: Retorna  o objeto "agente" com todos os atributos do objeto "agente", os que foram e os que não foram atualizados.
  */
 // define a rota para /agentes usando o método PATCH
-router.patch('/agentes/:id', agentesController.updateAgenteParcial);
+router.patch('/:id', agentesController.updateAgenteParcial);
 
 /**
  * @swagger
@@ -162,7 +162,7 @@ router.patch('/agentes/:id', agentesController.updateAgenteParcial);
  *         description: Não tem conteúdo como resposta, somente o status code de sucesso da remoção.
  */
 //define a rota para /agentes/:id usando o método DELETE
-router.delete('/agentes/:id', agentesController.deleteAgente);
+router.delete('/:id', agentesController.deleteAgente);
 /**
  * @swagger
  * /agentes/{id}/casos:
@@ -180,5 +180,5 @@ router.delete('/agentes/:id', agentesController.deleteAgente);
  *         description: Retorna os "casos" correspondentes ao ID do agente fornecido.
  */
 //define a rota para /agentes/:id/casos usando o método GET
-router.get('/agentes/:id/casos', agentesController.getCasosByAgenteId);
+router.get('/:id/casos', agentesController.getCasosByAgenteId);
 module.exports = router

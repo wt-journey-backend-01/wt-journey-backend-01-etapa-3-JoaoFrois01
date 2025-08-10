@@ -99,7 +99,7 @@ async function createAgente(req, res) {
 async function updateAgente(req, res) {
         const id = req.params.id
         if (req.body.id && req.body.id !== id) {
-                return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
+                return res.status(400).json(helpError.ErrorMessageCustom(400, "Não é permitido alterar o ID do agente."));
         }
         const agente = await agentesRepository.findById(id);
         if (!agente)
@@ -128,7 +128,7 @@ async function updateAgenteParcial(req, res) {
         const id = req.params.id;
 
         if (req.body.id && req.body.id !== id) {
-                return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
+                return res.status(400).json(helpError.ErrorMessageCustom(400, "Não é permitido alterar o ID do agente."));
         }
 
         const agente =  await agentesRepository.findById(id);

@@ -24,7 +24,7 @@ const casosController = require('../controllers/casosController');
  */
 
 //define a rota para /casos/search usando o método GET
-router.get('/casos/search', casosController.getAllCasosBySearch);
+router.get('/search', casosController.getAllCasosBySearch);
 
 /**
  * @swagger
@@ -42,7 +42,7 @@ router.get('/casos/search', casosController.getAllCasosBySearch);
  *         description: Lista de casos do departamento de polícia.
  */
 // define a rota para /casos usando o método GET
-router.get('/casos', casosController.getAllCasos);
+router.get('/', casosController.getAllCasos);
 
 /**
  * @swagger
@@ -61,7 +61,7 @@ router.get('/casos', casosController.getAllCasos);
  *         description: Retorna o "caso" correspondente ao ID fornecido.
  */
 //define a rota para /casos/:id usando o método GET
-router.get('/casos/:id', casosController.getCasoById);
+router.get('/:id', casosController.getCasoById);
 
 
 /**
@@ -81,7 +81,7 @@ router.get('/casos/:id', casosController.getCasoById);
  *         description: Retorna o agente correspondente ao ID  do caso fornecido.
  */
 // define a rota para /casos/:id usando o método GET
-router.get('/casos/:id/agente', casosController.getAgenteByCasoId)  ;
+router.get('/:id/agente', casosController.getAgenteByCasoId)  ;
 
 
 /**
@@ -112,7 +112,7 @@ router.get('/casos/:id/agente', casosController.getAgenteByCasoId)  ;
  *         description: Retorna o objeto "caso" criado.
  */
 // define a rota para /casos usando o método POST
-router.post('/casos', casosController.createCaso);
+router.post('/', casosController.createCaso);
 
 /**
  * @swagger
@@ -148,7 +148,7 @@ router.post('/casos', casosController.createCaso);
  *         description: Retorna  o objeto "caso" com todos os atributos atualizados.
  */
 // define a rota para /casos usando o método PUT
-router.put('/casos/:id', casosController.updateCaso);
+router.put('/:id', casosController.updateCaso);
 
 /**
  * @swagger
@@ -185,7 +185,7 @@ router.put('/casos/:id', casosController.updateCaso);
  *         description: Retorna  o objeto "caso" com todos os atributos do objeto "caso, os que foram e os que não foram atualizados.
  */
 // define a rota para /casos usando o método PUT
-router.patch('/casos/:id', casosController.updateCasoParcial);
+router.patch('/:id', casosController.updateCasoParcial);
 
 /**
  * @swagger
@@ -203,6 +203,6 @@ router.patch('/casos/:id', casosController.updateCasoParcial);
  *       204:
  *         description: Não tem conteúdo como resposta, somente o status code de sucesso da remoção.
  */
-router.delete('/casos/:id', casosController.deleteCaso);
+router.delete('/:id', casosController.deleteCaso);
 
 module.exports = router;

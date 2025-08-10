@@ -1,7 +1,7 @@
 exports.up = function(knex) {
   return knex.schema
     .createTable('agentes', (table) => {
-      table.increments('id').primary();
+      table.uuid('id').primary();
       table.string('nome').notNullable();
       table.date('dataDeIncorporacao').notNullable();
       table.string('cargo').notNullable();
@@ -9,11 +9,11 @@ exports.up = function(knex) {
     })
     .then(() => {
       return knex.schema.createTable('casos', (table) => {
-        table.increments('id').primary();
+        table.uuid('id').primary();
         table.string('titulo').notNullable();
         table.string('descricao').notNullable();
         table.string('status');
-        table.integer('agente_id').unsigned().references('id').inTable('agentes').onDelete('CASCADE');
+        table.uuid('agente_id').unsigned().references('id').inTable('agentes').onDelete('CASCADE');
         table.timestamps(true, true);
       });
     });

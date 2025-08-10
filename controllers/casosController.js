@@ -75,7 +75,7 @@ async function createCaso(req, res) {
 async function updateCaso(req, res) {
         const id = req.params.id
         if (req.body.id && req.body.id !== id) {
-                return res.status(400).json({ message: "Não é permitido alterar o ID do caso." });
+                return res.status(400).json(helpError.ErrorMessageCustom(400, "Não é permitido alterar o ID do caso."));
         }
         const caso = await casosRepository.findById(id);
         if (!caso)
@@ -113,7 +113,7 @@ async function updateCasoParcial(req, res) {
         const id = req.params.id;
 
         if (req.body.id && req.body.id !== id) {
-                return res.status(400).json({ message: "Não é permitido alterar o ID do caso." });
+                return res.status(400).json(helpError.ErrorMessageCustom(400, "Não é permitido alterar o ID do caso."));
         }
 
         const caso = await casosRepository.findById(id);

@@ -25,7 +25,16 @@ function ErrorMessageID(status, id, objeto) {
 
     return msg;
 }
+function ErrorMessageCustom(status, message) {
+  return {
+    status,
+    error: true,
+    message,
+  };
+}
+
 module.exports = {
     ErrorMessage,
-    ErrorMessageID
+    ErrorMessageID,
+    ErrorMessageCustom
 }
