@@ -4,23 +4,66 @@ const helpError = require('../utils/errorHandler');
 const moment = require('moment');
 const express = require('express');
 const { get } = require("../routes/casosRoutes");
+const { validate: isUuid } = require('uuid');
+
+
+
+function validarUUID(id) {
+    return isUuid(id);
+}
 
 async function getAllAgentes(req, res) {
-        const agentes = await agentesRepository.findAll();
-        let result = agentes;
-        if (req.query.cargo)
-                result = result.filter(a => a.cargo === req.query.cargo);
-        if (req.query.sort) {
-                if (req.query.sort[0] === "-")
-                        result = result.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao)).reverse();
-                else
-                        result = result.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao));
+    const agentes = await agentesRepository.findAll();
+    let result = agentes;
+
+    // Filtro por cargo exato
+    if (req.query.cargo) {
+        result = result.filter(a => a.cargo === req.query.cargo);
+    }
+
+    // Filtro por período (dataDeIncorporacao)
+    const start = req.query.dataDeIncorporacaoStart;
+    const end = req.query.dataDeIncorporacaoEnd;
+
+    if (start) {
+        result = result.filter(a => a.dataDeIncorporacao >= start);
+    }
+    if (end) {
+        result = result.filter(a => a.dataDeIncorporacao <= end);
+    }
+
+    // Ordenação flexível
+    if (req.query.sort) {
+        // detectar ordem decrescente
+        const desc = req.query.sort.startsWith("-");
+        const field = desc ? req.query.sort.slice(1) : req.query.sort;
+
+        // verificar se o campo existe no objeto
+        if (agentes.length > 0 && agentes[0].hasOwnProperty(field)) {
+            result = result.sort((a, b) => {
+                if (typeof a[field] === "string") {
+                    return a[field].localeCompare(b[field]);
+                }
+                // para outros tipos (ex: números, datas como ISO string)
+                if (a[field] < b[field]) return -1;
+                if (a[field] > b[field]) return 1;
+                return 0;
+            });
+            if (desc) {
+                result = result.reverse();
+            }
         }
-        return res.status(200).json(result);
+    }
+
+    return res.status(200).json(result);
 }
+
 
 async function getAgenteById(req, res, next) {
         const id = req.params.id
+
+        if (!validarUUID(id))
+                return res.status(400).json(helpError.ErrorMessage(400, "id"));
         const agente = await agentesRepository.findById(id)
         if (!agente)
                 return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));

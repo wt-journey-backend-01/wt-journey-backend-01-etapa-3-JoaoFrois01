@@ -1,6 +1,7 @@
 
 const helpError = require('../utils/errorHandler');
 const db = require('../db/db');
+const { v4: uuidv4 } = require('uuid');
 
 //Function 1 (GET /casos)
 async function findAll() {
@@ -17,7 +18,9 @@ async function findAllCasosByAgenteId(agente_id) {
 
 //Function 3 (POST /casos)
 async function AdicionarCaso(titulo, descricao, status, agente_id) {
+    const id = uuidv4();
     const [caso] = await db('casos').insert({
+        id,
         titulo,
         descricao,
         status,

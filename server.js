@@ -6,8 +6,8 @@ const casosRouter = require("./routes/casosRoutes")
 const setupSwagger = require('./docs/swagger');
 
 app.use(express.json());
-app.use(agentesRouter);
-app.use(casosRouter);
+app.use('/agentes',agentesRouter);
+app.use('/casos',casosRouter);
 setupSwagger(app);
 
 app.listen(PORT, () => {
