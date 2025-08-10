@@ -1,194 +1,190 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 9 créditos restantes para usar o sistema de feedback AI.
+Você tem 8 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para JoaoFrois01:
 
-Nota final: **1.6/100**
+Nota final: **30.5/100**
 
-Olá, JoaoFrois01! 👋🚓
+# Feedback para JoaoFrois01 🚔✨
 
-Antes de tudo, parabéns por chegar até aqui e entregar seu projeto! Construir uma API RESTful com Node.js e Express é um desafio e tanto, e você já deu passos importantes. 🎉 Vamos juntos destrinchar seu código e entender como deixar ele tinindo para o Departamento de Polícia!
-
----
-
-## 🎯 O que você mandou bem
-
-- Sua organização de arquivos está alinhada com o esperado: você tem as pastas `routes/`, `controllers/`, `repositories/`, `docs/` e `utils/`. Isso é essencial para manter o projeto escalável e fácil de manter. 👏
-- Você criou as rotas para os recursos `/agentes` e `/casos` com todos os métodos HTTP (GET, POST, PUT, PATCH, DELETE) previstos.
-- Implementou validações básicas nos controllers para campos obrigatórios e formatos, como data e status.
-- Usou o `moment` para validar datas e cuidou da formatação, o que é uma boa prática.
-- Os controllers estão chamando os métodos dos repositories, mantendo a separação de responsabilidades.
-- Implementou tratamento de erros personalizados com mensagens claras via `errorHandler.js`.
-- Você configurou o Swagger para documentação da API, o que é um diferencial bacana! 📝
-- Conseguiu passar o teste de receber status 400 ao tentar criar um agente com payload mal formatado — isso mostra que a validação inicial está funcionando.
+Olá, Joao! Antes de tudo, parabéns pela coragem e empenho em encarar esse desafio complexo de construir uma API RESTful para o Departamento de Polícia! 🎉 Eu analisei seu projeto com carinho e quero destacar os pontos fortes, além de te ajudar a destravar as dificuldades que apareceram. Vamos juntos nessa jornada? 🚀
 
 ---
 
-## 🕵️‍♂️ Onde podemos melhorar — análise profunda e dicas para você brilhar ainda mais!
+## 🎯 Pontos Positivos e Conquistas Bônus
 
-### 1. IDs dos agentes e casos: precisam ser UUIDs!
+- Você estruturou muito bem seu projeto, seguindo a arquitetura modular com rotas, controllers e repositories. Isso é fundamental para manter o código organizado e escalável! 👏
+- A utilização do Swagger para documentação está presente, o que é uma ótima prática para APIs.
+- A validação de UUID para os IDs está implementada, o que ajuda a garantir que os parâmetros de rota sejam válidos.
+- Você implementou filtros, ordenação e busca parcial para os agentes e casos, mostrando que está buscando entregar funcionalidades extras além do básico. Isso é excelente! 🌟
+- O tratamento de erros com mensagens customizadas e status HTTP está presente na maior parte do seu código, o que demonstra atenção à experiência do consumidor da API.
 
-**O que eu vi?**  
-Nos seus repositórios (`agentesRepository.js` e `casosRepository.js`), você está usando o banco de dados para inserir e buscar os agentes e casos, mas não vi em lugar nenhum que você está gerando ou validando os IDs como UUIDs. Isso é importante porque o desafio exige IDs no formato UUID para garantir unicidade e segurança.
+---
 
-**Por que isso importa?**  
-Se os IDs não forem UUIDs, seu sistema pode aceitar IDs inválidos e gerar problemas nas buscas, atualizações e deleções, além de não passar na validação esperada.
+## 🔍 Análise Profunda dos Pontos que Precisam de Atenção
 
-**Como corrigir?**  
-- Gere o UUID na criação do registro, por exemplo, usando o pacote `uuid` já instalado.  
-- Valide os IDs recebidos nas rotas para garantir que são UUIDs antes de processar.
+### 1. IDs utilizados para agentes e casos NÃO são UUIDs válidos (Penalidade grave)
 
-**Exemplo para gerar UUID no `AdicionarAgente`:**
+**O que eu percebi no seu código:**
+
+Você está usando Knex para manipular um banco de dados relacional (provavelmente PostgreSQL) e criando os IDs com `uuidv4()` na camada de repositories, o que é correto:
 
 ```js
 const { v4: uuidv4 } = require('uuid');
 
 async function AdicionarAgente(nome, dataDeIncorporacao, cargo) {
     const id = uuidv4();
-    const [novoAgente] = await db('agentes').insert({
-        id,
-        nome,
-        dataDeIncorporacao,
-        cargo
-    }).returning('*');
-    return novoAgente;
+    // ...
 }
 ```
 
-**Dica:** também valide o formato do UUID nos controllers usando regex ou uma biblioteca para garantir que IDs inválidos sejam rejeitados com status 400.
+Porém, ao analisar o seu banco de dados (pelo arquivo `db/migrations/20250810135334_solution_migrations.js.js` citado na estrutura, embora não tenha o conteúdo aqui), e considerando a penalidade, o problema fundamental é que os IDs armazenados no banco **não estão sendo salvos como UUIDs válidos**.
 
-**Recurso recomendado:**  
-Para entender melhor UUIDs e validação de dados, veja este vídeo sobre validação em APIs Node.js/Express:  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
+Isso pode acontecer por alguns motivos:
 
----
+- A coluna `id` na tabela do banco pode não estar configurada para armazenar UUID (tipo `uuid` no PostgreSQL), ou está recebendo um valor diferente na inserção.
+- Ou o banco está gerando IDs automaticamente (ex: serial/integer) e você está duplicando o ID com `uuidv4()`, causando inconsistência.
+- Ou o dado está sendo inserido corretamente no banco, mas na hora de consultar ou filtrar, algum lugar está usando IDs que não batem com o formato UUID esperado.
 
-### 2. Atualização de casos no `updateCaso` (PUT) — problema no envio dos dados
+**Por que isso é importante?**
 
-**O que eu percebi?**  
-No seu `casosController.js`, a função `updateCaso` espera os campos separados (`titulo`, `descricao`, `status`, `agente_id`) na assinatura, mas no repositório você tem a função `AtualizarCaso` que recebe um objeto `camposAtualizados`.
+Se os IDs não forem UUIDs válidos, suas validações de UUID no controller irão falhar e o cliente receberá erros 400 mesmo para IDs que deveriam existir. Além disso, isso compromete a integridade da API, já que o identificador principal não é confiável.
 
-No entanto, no seu controller, você está chamando:
+**Como corrigir?**
 
-```js
-return res.status(200).json(await casosRepository.AtualizarCaso(id, titulo, descricao, status, agente_id))
-```
-
-Ou seja, está passando os parâmetros separados, mas a função do repositório espera um objeto com os campos atualizados.
-
-**Por que isso causa problema?**  
-O repositório não vai conseguir atualizar corretamente porque os parâmetros não batem. Isso pode fazer com que a atualização falhe silenciosamente ou gere erros.
-
-**Como corrigir?**  
-Crie um objeto com os campos atualizados e passe para o repositório, assim:
-
-```js
-const camposAtualizados = { titulo, descricao, status, agente_id };
-return res.status(200).json(await casosRepository.AtualizarCaso(id, camposAtualizados));
-```
+- Verifique a migration do banco de dados para garantir que as colunas `id` das tabelas `agentes` e `casos` sejam do tipo `uuid` e que não sejam gerados IDs automáticos (ex: serial).
+- Garanta que a inserção dos dados utilize o `uuidv4()` para gerar o ID, e que este ID seja armazenado corretamente.
+- Se o banco gerar IDs automaticamente, não gere o UUID no código, ou adapte a validação para aceitar o formato que o banco usa (mas o desafio pede UUID).
 
 ---
 
-### 3. Validação nos controllers nem sempre consistente
+### 2. Endpoints estão implementados, mas algumas validações e respostas não estão 100%
 
-Você fez um ótimo trabalho validando campos obrigatórios, mas em alguns lugares, como no `updateCaso` (PUT), você faz:
+Você implementou todos os métodos HTTP para os recursos `/agentes` e `/casos` e os controllers estão bem organizados. Porém, notei que alguns testes falharam por causa de validações de payload incorretas.
+
+Por exemplo, no controller de agentes:
 
 ```js
-if (!agente_id || !agente)
-    return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
+async function createAgente(req, res) {
+    const nome = req.body.nome
+    const dataDeIncorporacao = req.body.dataDeIncorporacao
+    const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
+    const cargo = req.body.cargo
+
+    if (!nome)
+        return res.status(400).json(helpError.ErrorMessage(400, "nome"));
+    if (!dataDeIncorporacao || !dataFormatada.isValid() || dataFormatada.isAfter(moment()))
+        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
+    if (!cargo)
+        return res.status(400).json(helpError.ErrorMessage(400, "cargo"));
+
+    const novoAgente =  await agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo)
+    return res.status(201).json(novoAgente)
+}
 ```
 
-Porém, o correto seria retornar 404 se o agente não for encontrado, pois o ID foi informado, mas não existe no banco.
+Aqui, a validação parece adequada, mas é importante garantir que o cliente sempre envie o payload no formato JSON correto e que o middleware `express.json()` esteja ativo (e está, no `server.js`, ótimo!).
 
-**Dica:** Separe a validação de existência do agente do formato do campo. Se o campo está vazio ou mal formatado, 400. Se o ID não existe, 404.
+**Sugestão:** Para reforçar a validação, você poderia adicionar um middleware de validação ou usar bibliotecas como `Joi` ou `express-validator` para facilitar e padronizar esse processo.
 
 ---
 
-### 4. Implementação dos filtros de busca e ordenação — ainda não finalizados
+### 3. Rotas definidas com prefixos repetidos
 
-No controller de agentes (`getAllAgentes`), você faz um filtro básico por cargo e sort por `dataDeIncorporacao`. Isso está ótimo para começar! Porém, o desafio pede também filtros por data, ordenação crescente e decrescente, e filtros de casos por palavras-chave.
-
-No seu código, o filtro de casos por palavra-chave está implementado (`getAllCasosBySearch`), mas a ordenação e filtros complexos para agentes e casos ainda podem ser aprimorados.
-
-**Dica:** explore mais os parâmetros de query, valide-os e implemente a lógica para ordenação crescente e decrescente, assim como filtros múltiplos combinados.
-
----
-
-### 5. Organização das rotas no `server.js`
-
-No seu `server.js`, você fez:
+No arquivo `routes/agentesRoutes.js`, as rotas estão definidas assim:
 
 ```js
-app.use(agentesRouter);
-app.use(casosRouter);
+router.get('/agentes', agentesController.getAllAgentes);
+router.get('/agentes/:id', agentesController.getAgenteById);
 ```
 
-Mas o Express recomenda usar o prefixo das rotas ao usar routers para que as rotas fiquem organizadas e não causem conflitos.
-
-**Como ajustar?**
+Mas no `server.js` você já usa:
 
 ```js
 app.use('/agentes', agentesRouter);
-app.use('/casos', casosRouter);
 ```
 
-Isso garante que as rotas do arquivo `agentesRoutes.js` sejam todas acessadas a partir do caminho `/agentes` e o mesmo para `/casos`.
+Ou seja, o prefixo `/agentes` já está definido na montagem do router. Isso faz com que a rota completa fique `/agentes/agentes` e `/agentes/agentes/:id`, o que não é o esperado.
 
----
-
-### 6. Pequena melhoria no retorno do POST para agentes
-
-No seu controller `createAgente`, você faz:
+**O correto é definir as rotas no `agentesRoutes.js` assim:**
 
 ```js
-const novoAgente =  await agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo)
-return res.status(201).json(novoAgente)
+router.get('/', agentesController.getAllAgentes);
+router.get('/:id', agentesController.getAgenteById);
 ```
 
-No repositório, a função `AdicionarAgente` retorna um array (por causa do `returning('*')`), então o correto é desestruturar para retornar o objeto criado, assim:
+Assim, quando o `server.js` usa `app.use('/agentes', agentesRouter)`, as rotas finais ficam `/agentes` e `/agentes/:id`, como esperado.
+
+O mesmo vale para o `casosRoutes.js`.
+
+---
+
+### 4. Filtros e ordenação para agentes por data de incorporação
+
+Você implementou filtros por cargo, data de incorporação e ordenação, o que é ótimo. Porém, notei que os filtros por data (`dataDeIncorporacaoStart` e `dataDeIncorporacaoEnd`) são esperados na query string, mas não estão descritos na documentação Swagger. Isso pode gerar confusão para quem consome a API.
+
+Além disso, a ordenação está implementada, mas o campo `sort` pode receber valores com `-` para ordem decrescente, o que é legal.
+
+**Sugestão:** Atualize a documentação Swagger para refletir esses filtros e parâmetros de ordenação.
+
+---
+
+### 5. Mensagens de erro customizadas e status codes
+
+Você está usando um utilitário para mensagens de erro (`helpError.ErrorMessage`), o que é ótimo para manter padrão.
+
+No entanto, para alguns casos de erro 400, a mensagem está genérica, por exemplo:
 
 ```js
-const [novoAgente] =  await agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo);
-return res.status(201).json(novoAgente);
+return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
 ```
 
-Isso evita que a resposta seja um array com um objeto dentro, deixando o JSON mais limpo.
+Seria interessante usar o mesmo padrão de mensagens customizadas para manter a consistência da API.
 
 ---
 
-## 📚 Recursos para você se aprofundar
+### 6. Organização e estrutura do projeto
 
-- Para entender melhor a estrutura de rotas e uso do `express.Router()`, recomendo muito a leitura da documentação oficial do Express:  
-https://expressjs.com/pt-br/guide/routing.html
-
-- Para aprender boas práticas de organização MVC em Node.js, este vídeo é excelente:  
-https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
-
-- Para dominar validação de dados e tratamento de erros na API, veja:  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
-
-- Para fixar a manipulação de arrays e filtros usando JavaScript, este vídeo é ótimo:  
-https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+Pelo arquivo `project_structure.txt`, seu projeto está organizado conforme esperado, o que é excelente! Isso facilita a manutenção e evolução do código.
 
 ---
 
-## ✨ Resumo rápido para você focar:
+## 📚 Recomendações de Estudos para Você
 
-- **Garanta que IDs sejam UUIDs**: gere e valide UUIDs para agentes e casos.  
-- **Ajuste chamadas aos repositories**: passe objetos com campos atualizados, não múltiplos parâmetros separados.  
-- **Melhore a validação de existência e formato nos controllers**: use 400 para dados inválidos e 404 para IDs não encontrados.  
-- **Implemente filtros e ordenações completas** para agentes e casos, conforme o desafio pede.  
-- **No `server.js`, use prefixos nas rotas com `app.use('/agentes', agentesRouter)` e `app.use('/casos', casosRouter)`**.  
-- **Retorne objetos (não arrays) no POST** para que a resposta seja clara e correta.  
+- Para entender melhor o uso correto dos **UUIDs** e como integrá-los ao banco de dados, recomendo fortemente revisar o conteúdo de migrações e tipos no PostgreSQL, e também este vídeo que ajuda a entender a arquitetura MVC e organização de rotas no Express.js:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+
+- Sobre o uso correto das rotas e prefixos no Express, veja a documentação oficial do Express.js, que explica como usar `express.Router()` e montar rotas sem repetir prefixos:  
+  https://expressjs.com/pt-br/guide/routing.html
+
+- Para melhorar a validação de dados e o tratamento de erros HTTP 400, este vídeo é muito didático e vai te ajudar a criar validações robustas:  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+
+- E para entender melhor o fluxo de requisição e resposta, além dos status HTTP corretos, recomendo este vídeo que explica o protocolo HTTP e o uso correto dos status codes:  
+  https://youtu.be/RSZHvQomeKE
 
 ---
 
-JoaoFrois01, seu esforço é evidente e você já tem uma base sólida! 💪 Com esses ajustes, sua API vai ficar muito mais robusta, organizada e alinhada com as melhores práticas. Continue explorando, testando e aprendendo — cada detalhe conta para construir APIs profissionais! 🚀
+## 📝 Resumo Rápido dos Pontos para Focar
 
-Se precisar, volte aos vídeos e documentação que indiquei para reforçar os conceitos. Estou aqui torcendo pelo seu sucesso! 🎯
+- **Corrigir o uso dos prefixos nas rotas:** remova `/agentes` e `/casos` das rotas definidas nos arquivos `routes/`, deixando apenas `'/` e `'/:id'`, pois o prefixo já está no `server.js`.
+- **Garantir que os IDs usados sejam UUIDs válidos:** revise suas migrations e a forma como os IDs são criados e armazenados no banco.
+- **Aprimorar validações e mensagens de erro:** mantenha a consistência usando seu utilitário de erros para todas as respostas 400 e valide os dados com mais rigor, considerando payloads malformados.
+- **Atualizar documentação Swagger:** inclua todos os filtros e parâmetros de query que sua API aceita, para facilitar o uso.
+- **Revisar migrações e banco de dados:** confirmar que o banco está preparado para armazenar UUIDs e que não está gerando IDs automáticos conflitantes.
 
-Abraços do seu Code Buddy 🤖💙
+---
+
+Joao, você está no caminho certo! Seu código mostra que você já domina conceitos importantes e está buscando entregar uma API robusta e organizada. Com esses ajustes, sua aplicação vai ficar muito mais sólida e alinhada com as boas práticas. Continue estudando e praticando, pois a evolução é certa! 💪✨
+
+Se precisar, volte a esses recursos que indiquei e não hesite em pedir ajuda. Estou aqui torcendo pelo seu sucesso! 🚀👮‍♂️
+
+Um grande abraço e até a próxima revisão! 🤗👨‍💻
+
+---
+
+# Code Buddy 🕵️‍♂️💻
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
