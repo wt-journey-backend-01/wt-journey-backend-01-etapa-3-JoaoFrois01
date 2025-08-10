@@ -1,149 +1,194 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 4 créditos restantes para usar o sistema de feedback AI.
+Você tem 9 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para JoaoFrois01:
 
-Nota final: **97.7/100**
+Nota final: **1.6/100**
 
-# Feedback para JoaoFrois01 🚓✨
+Olá, JoaoFrois01! 👋🚓
 
-Olá, Joao! Primeiro, quero te parabenizar pelo excelente trabalho! 🎉 Sua API para o Departamento de Polícia está muito bem estruturada, com uma organização clara entre rotas, controllers e repositories. Isso mostra que você compreendeu muito bem a arquitetura modular que o desafio propôs. Seu uso do Express está muito bom, e as validações que você implementou nos controllers estão bem cuidadosas, garantindo a integridade dos dados. 👏
-
-Além disso, você conseguiu implementar alguns bônus importantes, como:
-
-- Filtros simples para casos por status e agente_id.
-- Endpoint para buscar casos por palavras-chave no título e descrição.
-- Ordenação e filtro de agentes por data de incorporação.
-
-Esses extras demonstram seu empenho em ir além do básico, o que é fantástico! 🚀
+Antes de tudo, parabéns por chegar até aqui e entregar seu projeto! Construir uma API RESTful com Node.js e Express é um desafio e tanto, e você já deu passos importantes. 🎉 Vamos juntos destrinchar seu código e entender como deixar ele tinindo para o Departamento de Polícia!
 
 ---
 
-## Vamos analisar juntos o ponto que precisa de atenção? 🕵️‍♂️
+## 🎯 O que você mandou bem
 
-### Problema detectado:  
-**"UPDATE: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto"**
+- Sua organização de arquivos está alinhada com o esperado: você tem as pastas `routes/`, `controllers/`, `repositories/`, `docs/` e `utils/`. Isso é essencial para manter o projeto escalável e fácil de manter. 👏
+- Você criou as rotas para os recursos `/agentes` e `/casos` com todos os métodos HTTP (GET, POST, PUT, PATCH, DELETE) previstos.
+- Implementou validações básicas nos controllers para campos obrigatórios e formatos, como data e status.
+- Usou o `moment` para validar datas e cuidou da formatação, o que é uma boa prática.
+- Os controllers estão chamando os métodos dos repositories, mantendo a separação de responsabilidades.
+- Implementou tratamento de erros personalizados com mensagens claras via `errorHandler.js`.
+- Você configurou o Swagger para documentação da API, o que é um diferencial bacana! 📝
+- Conseguiu passar o teste de receber status 400 ao tentar criar um agente com payload mal formatado — isso mostra que a validação inicial está funcionando.
 
-Ao analisar seu código no controller `agentesController.js`, mais especificamente na função `updateAgenteParcial`, percebi que você está fazendo as validações parciais corretamente, verificando se cada campo está definido e se é válido antes de atualizar. Veja este trecho:
+---
+
+## 🕵️‍♂️ Onde podemos melhorar — análise profunda e dicas para você brilhar ainda mais!
+
+### 1. IDs dos agentes e casos: precisam ser UUIDs!
+
+**O que eu vi?**  
+Nos seus repositórios (`agentesRepository.js` e `casosRepository.js`), você está usando o banco de dados para inserir e buscar os agentes e casos, mas não vi em lugar nenhum que você está gerando ou validando os IDs como UUIDs. Isso é importante porque o desafio exige IDs no formato UUID para garantir unicidade e segurança.
+
+**Por que isso importa?**  
+Se os IDs não forem UUIDs, seu sistema pode aceitar IDs inválidos e gerar problemas nas buscas, atualizações e deleções, além de não passar na validação esperada.
+
+**Como corrigir?**  
+- Gere o UUID na criação do registro, por exemplo, usando o pacote `uuid` já instalado.  
+- Valide os IDs recebidos nas rotas para garantir que são UUIDs antes de processar.
+
+**Exemplo para gerar UUID no `AdicionarAgente`:**
 
 ```js
-if (nome !== undefined) {
-    if (!nome) {
-        return res.status(400).json(helpError.ErrorMessage(400, "nome"));
-    }
-    camposAtualizados.nome = nome;
+const { v4: uuidv4 } = require('uuid');
+
+async function AdicionarAgente(nome, dataDeIncorporacao, cargo) {
+    const id = uuidv4();
+    const [novoAgente] = await db('agentes').insert({
+        id,
+        nome,
+        dataDeIncorporacao,
+        cargo
+    }).returning('*');
+    return novoAgente;
 }
 ```
 
-E o mesmo para `dataDeIncorporacao` e `cargo`. Isso está ótimo! 👍
+**Dica:** também valide o formato do UUID nos controllers usando regex ou uma biblioteca para garantir que IDs inválidos sejam rejeitados com status 400.
 
-### Mas... qual pode ser a causa do problema?
-
-O teste que falhou indica que o servidor não está retornando o status 400 quando o payload do PATCH está em formato incorreto. Isso geralmente significa que a validação não está cobrindo todos os casos ou que o erro não está sendo detectado quando deveria.
-
-**Ao investigar o código, percebi que a validação para `dataDeIncorporacao` no PATCH está diferente da do POST/PUT.** No POST, você usa o `moment` para validar se a data está no formato correto e se não está no futuro:
-
-```js
-const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-if (!dataDeIncorporacao || !dataFormatada.isValid() || dataFormatada.isAfter(moment()))
-    return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-```
-
-Porém, no PATCH, você só verifica se a data é válida e se não está no futuro, mas não verifica se o campo está vazio (string vazia), o que pode causar uma falha de validação silenciosa:
-
-```js
-if (dataDeIncorporacao !== undefined) {
-    const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-    if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
-        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-    }
-    camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
-}
-```
-
-Se o usuário enviar uma string vazia `""` para `dataDeIncorporacao`, o `moment` pode considerar inválido, mas você não está tratando o caso de um valor vazio explicitamente para os outros campos (`nome` e `cargo`) você sim trata.
-
-**Sugestão:** Acrescente a validação para garantir que o campo não seja vazio (nem espaços em branco) antes de validar a data. Algo assim:
-
-```js
-if (dataDeIncorporacao !== undefined) {
-    if (!dataDeIncorporacao || dataDeIncorporacao.trim() === "") {
-        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-    }
-    const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-    if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
-        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-    }
-    camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
-}
-```
-
-Assim, você garante que uma string vazia também gere erro 400, como esperado.
-
----
-
-## Sobre os testes bônus que não passaram
-
-Você também teve alguns pontos em filtros mais avançados e mensagens de erro customizadas que não foram totalmente aceitos. Mas analisando seu código, vi que:
-
-- Você implementou o endpoint para buscar o agente responsável por um caso (`getAgenteByCasoId`), mas o teste bônus de filtragem avançada não passou.  
-- A filtragem por palavras-chave no título e descrição está implementada no endpoint `/casos/search` e parece correta.  
-- A ordenação por data de incorporação em agentes está lá, mas talvez o teste espere um comportamento mais robusto (por exemplo, ordenar também por cargo quando as datas forem iguais, ou aceitar mais opções de sort).  
-- As mensagens de erro customizadas estão sendo usadas, mas talvez o formato esperado pelo teste seja um pouco diferente do que você retornou.
-
-**Minha dica:** revise os detalhes dos formatos das mensagens de erro e as regras de filtragem solicitadas no enunciado para garantir que estejam 100% alinhadas. Às vezes, um pequeno detalhe no JSON de resposta faz diferença.
-
----
-
-## Observação sobre a estrutura do projeto
-
-Sua estrutura está perfeita e segue o padrão esperado:
-
-```
-server.js
-routes/
-controllers/
-repositories/
-docs/
-utils/
-package.json
-```
-
-Parabéns por manter a organização! Isso facilita muito a manutenção e a escalabilidade do projeto. 👏
-
----
-
-## Recomendações de aprendizado para você que quer avançar ainda mais:
-
-- Para entender melhor a manipulação e validação de dados em APIs RESTful com Express, recomendo fortemente este vídeo:  
+**Recurso recomendado:**  
+Para entender melhor UUIDs e validação de dados, veja este vídeo sobre validação em APIs Node.js/Express:  
 https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
-Ele explica como validar dados e lidar com erros de forma robusta.
 
-- Para aprofundar no roteamento e organização das rotas com `express.Router()`, veja a documentação oficial:  
+---
+
+### 2. Atualização de casos no `updateCaso` (PUT) — problema no envio dos dados
+
+**O que eu percebi?**  
+No seu `casosController.js`, a função `updateCaso` espera os campos separados (`titulo`, `descricao`, `status`, `agente_id`) na assinatura, mas no repositório você tem a função `AtualizarCaso` que recebe um objeto `camposAtualizados`.
+
+No entanto, no seu controller, você está chamando:
+
+```js
+return res.status(200).json(await casosRepository.AtualizarCaso(id, titulo, descricao, status, agente_id))
+```
+
+Ou seja, está passando os parâmetros separados, mas a função do repositório espera um objeto com os campos atualizados.
+
+**Por que isso causa problema?**  
+O repositório não vai conseguir atualizar corretamente porque os parâmetros não batem. Isso pode fazer com que a atualização falhe silenciosamente ou gere erros.
+
+**Como corrigir?**  
+Crie um objeto com os campos atualizados e passe para o repositório, assim:
+
+```js
+const camposAtualizados = { titulo, descricao, status, agente_id };
+return res.status(200).json(await casosRepository.AtualizarCaso(id, camposAtualizados));
+```
+
+---
+
+### 3. Validação nos controllers nem sempre consistente
+
+Você fez um ótimo trabalho validando campos obrigatórios, mas em alguns lugares, como no `updateCaso` (PUT), você faz:
+
+```js
+if (!agente_id || !agente)
+    return res.status(400).json(helpError.ErrorMessage(400, "agente_id"));
+```
+
+Porém, o correto seria retornar 404 se o agente não for encontrado, pois o ID foi informado, mas não existe no banco.
+
+**Dica:** Separe a validação de existência do agente do formato do campo. Se o campo está vazio ou mal formatado, 400. Se o ID não existe, 404.
+
+---
+
+### 4. Implementação dos filtros de busca e ordenação — ainda não finalizados
+
+No controller de agentes (`getAllAgentes`), você faz um filtro básico por cargo e sort por `dataDeIncorporacao`. Isso está ótimo para começar! Porém, o desafio pede também filtros por data, ordenação crescente e decrescente, e filtros de casos por palavras-chave.
+
+No seu código, o filtro de casos por palavra-chave está implementado (`getAllCasosBySearch`), mas a ordenação e filtros complexos para agentes e casos ainda podem ser aprimorados.
+
+**Dica:** explore mais os parâmetros de query, valide-os e implemente a lógica para ordenação crescente e decrescente, assim como filtros múltiplos combinados.
+
+---
+
+### 5. Organização das rotas no `server.js`
+
+No seu `server.js`, você fez:
+
+```js
+app.use(agentesRouter);
+app.use(casosRouter);
+```
+
+Mas o Express recomenda usar o prefixo das rotas ao usar routers para que as rotas fiquem organizadas e não causem conflitos.
+
+**Como ajustar?**
+
+```js
+app.use('/agentes', agentesRouter);
+app.use('/casos', casosRouter);
+```
+
+Isso garante que as rotas do arquivo `agentesRoutes.js` sejam todas acessadas a partir do caminho `/agentes` e o mesmo para `/casos`.
+
+---
+
+### 6. Pequena melhoria no retorno do POST para agentes
+
+No seu controller `createAgente`, você faz:
+
+```js
+const novoAgente =  await agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo)
+return res.status(201).json(novoAgente)
+```
+
+No repositório, a função `AdicionarAgente` retorna um array (por causa do `returning('*')`), então o correto é desestruturar para retornar o objeto criado, assim:
+
+```js
+const [novoAgente] =  await agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo);
+return res.status(201).json(novoAgente);
+```
+
+Isso evita que a resposta seja um array com um objeto dentro, deixando o JSON mais limpo.
+
+---
+
+## 📚 Recursos para você se aprofundar
+
+- Para entender melhor a estrutura de rotas e uso do `express.Router()`, recomendo muito a leitura da documentação oficial do Express:  
 https://expressjs.com/pt-br/guide/routing.html
 
-- Para garantir que o status code 400 esteja sendo usado corretamente e entender o protocolo HTTP, este vídeo é muito didático:  
-https://youtu.be/RSZHvQomeKE
+- Para aprender boas práticas de organização MVC em Node.js, este vídeo é excelente:  
+https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
 
-- Por fim, para manipulação de arrays e filtros, que você usou bastante, vale a pena revisar este vídeo para dominar métodos como `filter`, `find` e `sort`:  
+- Para dominar validação de dados e tratamento de erros na API, veja:  
+https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
+
+- Para fixar a manipulação de arrays e filtros usando JavaScript, este vídeo é ótimo:  
 https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
 
 ---
 
-## Resumo dos principais pontos para você focar:
+## ✨ Resumo rápido para você focar:
 
-- [ ] No PATCH `/agentes/:id`, valide explicitamente que campos string não estejam vazios (ex: `dataDeIncorporacao`), para garantir retorno 400 quando o payload estiver mal formatado.  
-- [ ] Reveja os detalhes das mensagens de erro customizadas para garantir que o formato JSON esteja exatamente como esperado (isso ajuda nos bônus).  
-- [ ] Confira se os filtros e ordenações avançadas (ex: ordenação por data de incorporação com sort asc/desc e filtros combinados) estão cobrindo todos os casos solicitados.  
-- [ ] Continue mantendo a organização do seu projeto, que está exemplar!  
-- [ ] Explore os recursos recomendados para aprofundar seu conhecimento em validação, roteamento e manipulação de dados.
+- **Garanta que IDs sejam UUIDs**: gere e valide UUIDs para agentes e casos.  
+- **Ajuste chamadas aos repositories**: passe objetos com campos atualizados, não múltiplos parâmetros separados.  
+- **Melhore a validação de existência e formato nos controllers**: use 400 para dados inválidos e 404 para IDs não encontrados.  
+- **Implemente filtros e ordenações completas** para agentes e casos, conforme o desafio pede.  
+- **No `server.js`, use prefixos nas rotas com `app.use('/agentes', agentesRouter)` e `app.use('/casos', casosRouter)`**.  
+- **Retorne objetos (não arrays) no POST** para que a resposta seja clara e correta.  
 
 ---
 
-Joao, seu projeto está muito sólido! 🏆 Com esses ajustes finos, você vai deixar sua API ainda mais robusta e profissional. Continue nessa pegada, porque você está no caminho certo! Se precisar, estou aqui para ajudar a destravar qualquer dúvida. 🚀💪
+JoaoFrois01, seu esforço é evidente e você já tem uma base sólida! 💪 Com esses ajustes, sua API vai ficar muito mais robusta, organizada e alinhada com as melhores práticas. Continue explorando, testando e aprendendo — cada detalhe conta para construir APIs profissionais! 🚀
 
-Um grande abraço e sucesso! 👮‍♂️✨
+Se precisar, volte aos vídeos e documentação que indiquei para reforçar os conceitos. Estou aqui torcendo pelo seu sucesso! 🎯
+
+Abraços do seu Code Buddy 🤖💙
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
