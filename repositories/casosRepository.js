@@ -1,60 +1,52 @@
-const helpID = require('uuid');
-const helpError = require('../utils/errorHandler');
-const casos = [
-    {
-        id: "f5fb2ad5-22a8-4cb4-90f2-8733517a0d46",
-        titulo: "homicidio",
-        descricao: "Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.",
-        status: "aberto",
-        agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1"
 
-    },
-    //Demais objetos
-]
+const helpError = require('../utils/errorHandler');
+const db = require('../db/db');
 
 //Function 1 (GET /casos)
-function findAll() {
-    return casos
+async function findAll() {
+    return await db('casos').select('*');
 }
 //Function 2 (GET /casos/:id)
-function findById(id) {
-    return casos.find(caso => caso.id === id);
+async function findById(id) {
+    return await db('casos').select('*').where({ id }).first();
 }
+
+async function findAllCasosByAgenteId(agente_id) {
+    return await db('casos').select('*').where({ agente_id });
+}
+
 //Function 3 (POST /casos)
-function AdicionarCaso(titulo, descricao, status, agente_id) {
-    const novoCaso = {
-        id: helpID.v4(),
+async function AdicionarCaso(titulo, descricao, status, agente_id) {
+    const [caso] = await db('casos').insert({
         titulo,
         descricao,
         status,
         agente_id
-    }
-    casos.push(novoCaso);
-    return novoCaso;
+    }).returning('*');
+    return caso;
 }
 //Function 4 (PUT /casos/:id)
-
-function AtualizarCaso(id, titulo, descricao, status, agente_id) {
-    const caso = findById(id);
-    caso.titulo = titulo;
-    caso.descricao = descricao;
-    caso.status = status;
-    caso.agente_id = agente_id;
-    return caso;
+ async function AtualizarCaso(id, camposAtualizados) {
+    const [casoAtualizado] = await db('casos')
+        .where({ id })
+        .update(camposAtualizados)
+        .returning('*');
+    return casoAtualizado;
 }
 
 //Function 5 (PATCH /casos/:id) -- Função para atualizar parcialmente um caso(a função está igual a de cima, mudei para tornar mais legível)
-function AtualizarCasoParcial(id, camposAtualizados) {
-    const caso = findById(id);
-    Object.assign(caso, camposAtualizados);
-    return caso;
+async function AtualizarCasoParcial(id, camposAtualizados) {
+    const [casoAtualizado] = await db('casos')
+        .where({ id })
+        .update(camposAtualizados)
+        .returning('*');
+    return casoAtualizado;
 }
-
 //Function 6 (DELETE /casos/:id)
 
-function RemoverCaso(id) {
-    const caso = findById(id);
-    casos.splice(casos.indexOf(caso), 1);
+async function RemoverCaso(id) {
+    await db('casos').where({ id }).del();
+    return;
 }
 
 
@@ -64,6 +56,7 @@ function RemoverCaso(id) {
 module.exports = {
     findAll,
     findById,
+    findAllCasosByAgenteId,
     AdicionarCaso,
     AtualizarCaso,
     AtualizarCasoParcial,

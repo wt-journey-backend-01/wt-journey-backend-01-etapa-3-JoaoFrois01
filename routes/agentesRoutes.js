@@ -163,6 +163,22 @@ router.patch('/agentes/:id', agentesController.updateAgenteParcial);
  */
 //define a rota para /agentes/:id usando o método DELETE
 router.delete('/agentes/:id', agentesController.deleteAgente);
-
-
+/**
+ * @swagger
+ * /agentes/{id}/casos:
+ *   get:
+ *     summary: Pesquisa os casos de um agente pelo ID
+ *     tags: [Agentes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Retorna os "casos" correspondentes ao ID do agente fornecido.
+ */
+//define a rota para /agentes/:id/casos usando o método GET
+router.get('/agentes/:id/casos', agentesController.getCasosByAgenteId);
 module.exports = router

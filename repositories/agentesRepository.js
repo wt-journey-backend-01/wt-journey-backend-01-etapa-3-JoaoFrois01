@@ -1,60 +1,50 @@
-const helpID = require('uuid');
+
 const helpError = require('../utils/errorHandler');
-
-const agentes = [
-
-    {
-        id: "401bccf5-cf9e-489d-8412-446cd169a0f1",
-        nome: "Rommel Carneiro",
-        dataDeIncorporacao: "1992-10-04",
-        cargo: "delegado"
-
-    }
-]
+const db = require('../db/db');
 
 //Function 1 (GET /agentes)
-function findAll() {
-    return agentes;
+async function findAll() {
+    return await db('agentes').select('*');
 }
 
 //Function 2 (GET /agentes/:id)
-function findById(id) {
-    return agentes.find(c =>  c.id === id )
+async function findById(id) {
+    return await db('agentes').select('*').where({ id }).first()
 }
 
+
 //Function 3 (POST /agentes)
-function AdicionarAgente(nome, dataDeIncorporacao, cargo) {
-    const novoAgente = {
-        id: helpID.v4(),
+async function AdicionarAgente(nome, dataDeIncorporacao, cargo) {
+    return await db('agentes').insert({
         nome,
         dataDeIncorporacao,
         cargo
-    }
-    agentes.push(novoAgente)
-
-    return novoAgente
+    }).returning('*');
 }
 
 //Function 4 (PUT /agentes/:id)
-function AtualizarAgente(id, camposAtualizados) {
-    const agente = findById(id);
-    Object.assign(agente, camposAtualizados);
-
-    return agente;
+async function AtualizarAgente(id, camposAtualizados) {
+    const [agenteAtualizado] = await db('agentes')
+        .where({ id })
+        .update(camposAtualizados)
+        .returning('*');
+    return agenteAtualizado;
 }
 
 //Function 5 (PATCH /agentes/:id)
-function AtualizarAgenteParcial(id, camposAtualizados) {
-    const agente = findById(id);
-    Object.assign(agente, camposAtualizados);
-    return agente;
+async function AtualizarAgenteParcial(id, camposAtualizados) {
+    const [agenteAtualizado] = await db('agentes')
+        .where({ id })
+        .update(camposAtualizados)
+        .returning('*');
+
+    return agenteAtualizado;
 }
 
 //Function 6 (DELETE /agentes/:id)
-function RemoverAgente(id) {
-    const agente = findById(id);
-    agentes.splice(agentes.indexOf(agente), 1);
-    return 
+async function RemoverAgente(id) {
+    await db('agentes').where({ id }).del();
+    return;
 }
 
 module.exports = {

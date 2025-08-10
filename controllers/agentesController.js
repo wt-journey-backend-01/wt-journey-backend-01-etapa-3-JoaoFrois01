@@ -1,11 +1,12 @@
 const agentesRepository = require("../repositories/agentesRepository")
+const casosRepository = require("../repositories/casosRepository");
 const helpError = require('../utils/errorHandler');
 const moment = require('moment');
-const helpID = require('uuid');
 const express = require('express');
+const { get } = require("../routes/casosRoutes");
 
-function getAllAgentes(req, res) {
-        const agentes = agentesRepository.findAll()
+async function getAllAgentes(req, res) {
+        const agentes = await agentesRepository.findAll();
         let result = agentes;
         if (req.query.cargo)
                 result = result.filter(a => a.cargo === req.query.cargo);
@@ -18,16 +19,24 @@ function getAllAgentes(req, res) {
         return res.status(200).json(result);
 }
 
-function getAgenteById(req, res, next) {
+async function getAgenteById(req, res, next) {
         const id = req.params.id
-        const agente = agentesRepository.findById(id)
+        const agente = await agentesRepository.findById(id)
         if (!agente)
                 return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
         else
                 return res.status(200).json(agente)
 }
+async function getCasosByAgenteId(req, res, next) {
+        const agente_id = req.params.id
+        const agente = await agentesRepository.findById(agente_id);
+        if (!agente)
+                return res.status(404).json(helpError.ErrorMessageID(404, agente_id, "agente"));
+        const casos = await casosRepository.findAllCasosByAgenteId(agente_id);
+        return res.status(200).json(casos);
+}
 
-function createAgente(req, res) {
+async function createAgente(req, res) {
         const nome = req.body.nome
         const dataDeIncorporacao = req.body.dataDeIncorporacao
         const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
@@ -40,21 +49,20 @@ function createAgente(req, res) {
         if (!cargo)
                 return res.status(400).json(helpError.ErrorMessage(400, "cargo"));
 
-        const novoAgente = agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo)
+        const novoAgente =  await agentesRepository.AdicionarAgente(nome, dataDeIncorporacao, cargo)
         return res.status(201).json(novoAgente)
 }
 
-function updateAgente(req, res) {
+async function updateAgente(req, res) {
         const id = req.params.id
         if (req.body.id && req.body.id !== id) {
                 return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
         }
-        const agente = agentesRepository.findById(id);
+        const agente = await agentesRepository.findById(id);
         if (!agente)
                 return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
 
         const camposAtualizados = {};
-
         const nome = req.body.nome
         const dataDeIncorporacao = req.body.dataDeIncorporacao
         const cargo = req.body.cargo
@@ -70,65 +78,65 @@ function updateAgente(req, res) {
         camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
         camposAtualizados.cargo = cargo;
 
-        return res.status(200).json(agentesRepository.AtualizarAgente(id, camposAtualizados));
+        return res.status(200).json(await agentesRepository.AtualizarAgente(id, camposAtualizados));
 }
 
-function updateAgenteParcial(req, res) {
-    const id = req.params.id;
+async function updateAgenteParcial(req, res) {
+        const id = req.params.id;
 
-    if (req.body.id && req.body.id !== id) {
-        return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
-    }
-
-    const agente = agentesRepository.findById(id);
-    if (!agente) {
-        return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
-    }
-
-    const camposAtualizados = {};
-
-    const nome = req.body.nome;
-    const dataDeIncorporacao = req.body.dataDeIncorporacao;
-    const cargo = req.body.cargo;
-
-    // Validações parciais:
-    if (nome !== undefined) {
-        if (!nome) {
-            return res.status(400).json(helpError.ErrorMessage(400, "nome"));
+        if (req.body.id && req.body.id !== id) {
+                return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
         }
-        camposAtualizados.nome = nome;
-    }
 
-    if (dataDeIncorporacao !== undefined) {
-    if (!dataDeIncorporacao || dataDeIncorporacao.trim() === "") {
-        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-    }
-    const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-    if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
-        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-    }
-    camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
-}
-
-    if (cargo !== undefined) {
-        if (!cargo) {
-            return res.status(400).json(helpError.ErrorMessage(400, "cargo"));
+        const agente =  await agentesRepository.findById(id);
+        if (!agente) {
+                return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
         }
-        camposAtualizados.cargo = cargo;
-    }
 
-    const agenteAtualizado = agentesRepository.AtualizarAgenteParcial(id, camposAtualizados);
-    return res.status(200).json(agenteAtualizado);
+        const camposAtualizados = {};
+
+        const nome = req.body.nome;
+        const dataDeIncorporacao = req.body.dataDeIncorporacao;
+        const cargo = req.body.cargo;
+
+        // Validações parciais:
+        if (nome !== undefined) {
+                if (!nome) {
+                        return res.status(400).json(helpError.ErrorMessage(400, "nome"));
+                }
+                camposAtualizados.nome = nome;
+        }
+
+        if (dataDeIncorporacao !== undefined) {
+                if (!dataDeIncorporacao || dataDeIncorporacao.trim() === "") {
+                        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
+                }
+                const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
+                if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
+                        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
+                }
+                camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
+        }
+
+        if (cargo !== undefined) {
+                if (!cargo) {
+                        return res.status(400).json(helpError.ErrorMessage(400, "cargo"));
+                }
+                camposAtualizados.cargo = cargo;
+        }
+
+        const agenteAtualizado =  await agentesRepository.AtualizarAgenteParcial(id, camposAtualizados);
+        return res.status(200).json(agenteAtualizado);
 }
 
 
-function deleteAgente(req, res) {
+async function deleteAgente(req, res) {
         const id = req.params.id
-        const agente = agentesRepository.findById(id);
+        const agente = await agentesRepository.findById(id);
         if (!agente)
                 return res.status(404).json(helpError.ErrorMessageID(404, id, "agente"));
 
-        agentesRepository.RemoverAgente(id);
+        await agentesRepository.RemoverAgente(id);
         return res.sendStatus(204);
 
 }
@@ -136,6 +144,7 @@ function deleteAgente(req, res) {
 module.exports = {
         getAllAgentes,
         getAgenteById,
+        getCasosByAgenteId,
         createAgente,
         updateAgente,
         updateAgenteParcial,
